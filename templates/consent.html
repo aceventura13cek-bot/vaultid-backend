@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VaultID Consent</title>
+</head>
+<body style="font-family: Arial; text-align:center; margin-top:100px">
+
+    <h2>VaultID</h2>
+    <p><strong>{{ app_name }}</strong> wants to access your account</p>
+
+    <form method="post" action="/auth/allow">
+        <input type="hidden" name="client_id" value="{{ client_id }}">
+        <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}">
+        <input type="hidden" name="state" value="{{ state }}">
+        <button type="submit">✅ Allow</button>
+    </form>
+
+    <br>
+
+    <form method="post" action="/auth/deny">
+        <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}">
+        <input type="hidden" name="state" value="{{ state }}">
+        <button type="submit">❌ Deny</button>
+    </form>
+
+</body>
+</html>
