@@ -1,0 +1,13 @@
+-- Add ZKP columns to users table
+BEGIN;
+
+-- Add ZKP fields
+ALTER TABLE users ADD COLUMN IF NOT EXISTS zkp_public_key TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS zkp_salt TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS zkp_params JSONB;
+
+-- Add timestamps
+ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP;
+
+COMMIT;
