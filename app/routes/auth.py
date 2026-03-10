@@ -104,7 +104,7 @@ def login(
     - Creates secure session with device binding
     - Issues hashed tokens (not stored raw!)
     - Tracks device and location
-    - Risk scoring ready
+    - AI risk scoring
     """
     # Get user
     user = db.query(User).filter(User.email == req.email).first()
@@ -130,11 +130,6 @@ def login(
     
     if not is_valid:
         del active_challenges[req.email]
-        
-        # TODO: Increment failed login attempts
-        # user.failed_login_attempts += 1
-        # db.commit()
-        
         raise HTTPException(401, "Authentication failed - invalid proof")
     
     # Delete challenge (one-time use - prevents replay)
@@ -142,10 +137,31 @@ def login(
     
     print(f"✅ ZKP verification passed for {req.email}")
     
-    # 🆕 CREATE SESSION WITH TOKENS
-    # TODO: Get risk score from AI service (default 0 for now)
-    risk_score = 0  # Will integrate AI engineer's work here
+    # 🆕 AI RISK SCORING
+    from app.core.ai_risk_client import ai_risk_client
     
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    user_agent = request.headers.get("User-Agent", "")
+    
+    risk_assessment = ai_risk_client.calculate_login_risk(
+        user_id=user.id,
+        email=user.email,
+        ip_address=client_ip,
+        user_agent=user_agent
+    )
+    
+    risk_score = risk_assessment["risk_score"]
+    
+    print(f"🤖 AI Risk Score: {risk_score}/100")
+    
+    if risk_assessment["anomaly_detected"]:
+        print(f"   ⚠️ Anomaly: {risk_assessment['anomaly_reason']}")
+    
+    # TODO: If risk too high, require MFA
+    # if ai_risk_client.should_require_mfa(risk_score):
+    #     return {"mfa_required": True, "challenge": generate_mfa_challenge()}
+    
+    # 🆕 CREATE SESSION WITH RISK SCORE
     session_data = session_manager.create_session(
         db=db,
         user=user,
@@ -158,8 +174,9 @@ def login(
     db.commit()
     
     print(f"🎫 Session created: {session_data['session_id'][:20]}...")
-    print(f"   Device: {request.headers.get('User-Agent', 'Unknown')[:50]}...")
-    print(f"   IP: {request.client.host if request.client else 'Unknown'}")
+    print(f"   Device: {user_agent[:50]}...")
+    print(f"   IP: {client_ip}")
+    print(f"   Risk: {risk_score}/100")
     
     return TokenResponse(
         access_token=session_data["access_token"],
@@ -176,62 +193,28 @@ def refresh_token(
     db: Session = Depends(get_db)
 ):
     """
-    Refresh Access Token
+    Refresh Access Token with Rotation
     
-    NEW: Implements token rotation (one-time use refresh tokens)
+    🔐 SECURITY FEATURES:
+    - One-time use refresh tokens
+    - Automatic rotation on every use
+    - Replay attack detection
+    - Breach response (revoke all sessions)
+    
+    Process:
+    1. Verify refresh token
+    2. Check if already used (replay detection)
+    3. Issue NEW access + refresh tokens
+    4. Blacklist old refresh token
+    5. Return new tokens
     """
-    try:
-        # Verify refresh token
-        payload = verify_refresh_token(req.refresh_token)
-        
-        email = payload.get("sub")
-        session_id = payload.get("session_id")
-        jti = payload.get("jti")
-        
-        if not email or not session_id or not jti:
-            raise HTTPException(401, "Invalid refresh token")
-        
-        # Hash the JTI
-        jti_hash = hash_token_jti(jti)
-        
-        # Check if token is blacklisted
-        if session_manager.is_token_blacklisted(db, jti_hash):
-            raise HTTPException(401, "Refresh token has been revoked")
-        
-        # Get user
-        user = db.query(User).filter(User.email == email).first()
-        if not user:
-            raise HTTPException(401, "User not found")
-        
-        # 🔄 TOKEN ROTATION (Coming in Step 5)
-        # For now, just issue new access token
-        from app.core.tokens import create_hashed_access_token, hash_ip_address
-        
-        client_ip = request.client.host if request.client else "127.0.0.1"
-        ip_hash = hash_ip_address(client_ip)
-        
-        access_token, access_jti_hash = create_hashed_access_token(
-            user_id=user.id,
-            email=user.email,
-            session_id=session_id,
-            ip_hash=ip_hash,
-            risk_score=0
-        )
-        
-        # Update session activity
-        session_manager.update_session_activity(db, session_id, access_jti_hash)
-        
-        print(f"🔄 Token refreshed for {email}")
-        
-        # TODO: Implement full rotation in Step 5
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=req.refresh_token,  # Same for now
-            token_type="bearer"
-        )
+    from app.core.token_rotation import token_rotation_manager
     
-    except Exception as e:
-        raise HTTPException(401, f"Invalid refresh token: {str(e)}")
+    return token_rotation_manager.rotate_refresh_token(
+        refresh_token=req.refresh_token,
+        request=request,
+        db=db
+    )
 
 
 @router.get("/me")
@@ -259,6 +242,11 @@ def logout(
 ):
     """
     Logout - Revoke current session
+    
+    Request body:
+    {
+        "session_id": "session_xyz..."
+    }
     """
     revoked = session_manager.revoke_session(db, session_id, "user_logout")
     
@@ -275,6 +263,8 @@ def list_sessions(
 ):
     """
     List all active sessions for current user
+    
+    Returns list of sessions with device info, location, last activity
     """
     sessions = session_manager.get_active_sessions(db, current_user.id)
     
@@ -287,12 +277,46 @@ def list_sessions(
                 "ip_address": str(s.ip_address) if s.ip_address else None,
                 "created_at": str(s.created_at),
                 "last_activity": str(s.last_activity),
-                "is_current": False  # TODO: Detect current session
+                "risk_score": s.risk_score,
+                "is_current": False  # TODO: Detect current session from token
             }
             for s in sessions
         ],
         "total": len(sessions)
     }
+
+
+@router.post("/sessions/{session_id}/revoke")
+def revoke_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Revoke a specific session by ID
+    
+    Use case: "Log out from my iPhone"
+    """
+    # Verify session belongs to current user
+    from app.models.session import Session as SessionModel
+    
+    session = db.query(SessionModel).filter(
+        SessionModel.session_id == session_id,
+        SessionModel.user_id == current_user.id
+    ).first()
+    
+    if not session:
+        raise HTTPException(404, "Session not found or doesn't belong to you")
+    
+    revoked = session_manager.revoke_session(db, session_id, "user_revoke")
+    
+    if revoked:
+        return {
+            "message": "Session revoked successfully",
+            "session_id": session_id
+        }
+    else:
+        raise HTTPException(400, "Failed to revoke session")
 
 
 @router.post("/logout-all")
@@ -303,6 +327,13 @@ def logout_all_devices(
 ):
     """
     Logout from all devices (revoke all sessions)
+    
+    Optional: Keep current session active by passing current_session_id
+    
+    Request body:
+    {
+        "current_session_id": "session_xyz..." (optional)
+    }
     """
     count = session_manager.revoke_all_sessions(
         db,
@@ -311,6 +342,20 @@ def logout_all_devices(
     )
     
     return {
-        "message": f"Logged out from {count} devices",
+        "message": f"Logged out from {count} device(s)",
         "sessions_revoked": count
+    }
+@router.get("/ai/health")
+def check_ai_service():
+    """
+    Check if AI risk service is available
+    """
+    from app.core.ai_risk_client import ai_risk_client
+    
+    is_healthy = ai_risk_client.check_health()
+    
+    return {
+        "ai_service_available": is_healthy,
+        "ai_service_url": ai_risk_client.ai_service_url,
+        "status": "healthy" if is_healthy else "unavailable"
     }
