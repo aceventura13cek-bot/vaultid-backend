@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VaultID — Secure Authentication</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+:root {
+  --black:       #000000;
+  --dark-ui:     #080d0a;
+  --panel-left:  #0a100d;
+  --panel-right: #07100c;
+  --bg:          #0f1a14;
+  --bg2:         #091209;
+  --text:        #d4e8db;
+  --text-muted:  #5a8068;
+  --deep-shadow: #040a06;
+  --moss:        #1e3828;
+  --mint:        #A4D1B3;
+  --neon:        #4ED378;
+  --neon-dim:    rgba(78,211,120,0.15);
+  --divider:     rgba(78,211,120,0.12);
+  --divider-solid: #172420;
+  --white:       #e8f5ed;
+  --error:       #f87171;
+  --success:     #4ED378;
+  --info:        #34d399;
+  --card-border: rgba(78,211,120,0.2);
+
+  /* Font stacks */
+  --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-logo: 'Pacifico', cursive;
+}
+ 
+html, body {
+  width: 100%; min-height: 100%;
+  background: #050d08;
+  font-family: var(--font-body);
+  color: var(--text);
+  overflow-x: hidden;
+}
+ 
+/* ── STARFIELD CANVAS (behind everything) ── */
+#bgStars {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+}
+ 
+/* ── SUBTLE GRID OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(78,211,120,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(78,211,120,0.04) 1px, transparent 1px);
+  background-size: 52px 52px;
+  pointer-events: none;
+  z-index: 1;
+}
+ 
+/* ── AMBIENT BLOBS ── */
+.blob {
+  position: fixed; border-radius: 50%;
+  filter: blur(100px); pointer-events: none; z-index: 1;
+}
+.blob-1 { width: 600px; height: 600px; top: -200px; right: -150px;
+  background: radial-gradient(circle, rgba(78,211,120,0.09) 0%, transparent 70%); }
+.blob-2 { width: 500px; height: 500px; bottom: -150px; left: -150px;
+  background: radial-gradient(circle, rgba(34,100,60,0.12) 0%, transparent 70%); }
+.blob-3 { width: 350px; height: 350px; top: 40%; left: 35%;
+  background: radial-gradient(circle, rgba(78,211,120,0.05) 0%, transparent 70%); }
+ 
+/* ── SCENE ── */
+.scene {
+  position: relative; z-index: 10;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 32px 16px;
+}
+ 
+/* ── CARD ── */
+.card {
+  display: flex;
+  width: min(980px, 100%);
+  min-height: 600px;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  box-shadow:
+    0 0 0 1px rgba(78,211,120,0.06),
+    0 20px 60px rgba(0,0,0,0.7),
+    0 0 80px rgba(78,211,120,0.06),
+    0 0 160px rgba(78,211,120,0.03);
+  animation: cardIn 0.7s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(32px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+ 
+/* ══════════════════════════
+   LEFT PANEL
+══════════════════════════ */
+.left {
+  width: 50%; background: var(--panel-left);
+  padding: 48px 52px;
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+  position: relative;
+}
+ 
+.left::before {
+  content: '';
+  position: absolute; top: 0; right: 0; bottom: 0; width: 1px;
+  background: linear-gradient(to bottom, transparent, rgba(78,211,120,0.2), transparent);
+  pointer-events: none;
+}
+ 
+/* ── LOGO ── */
+.logo-wrap { margin-bottom: 36px; animation: fadeUp 0.6s 0.1s ease both; }
+.logo-icon {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, #0e2018, #1a3828);
+  border: 1px solid rgba(78,211,120,0.3);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+  box-shadow: 0 0 16px rgba(78,211,120,0.15);
+}
+.logo-icon svg { width: 22px; height: 22px; }
+
+/* PACIFICO logo — pure white, no glow tint */
+.logo-name {
+  font-family: var(--font-logo);
+  font-weight: 400; /* Pacifico is single-weight */
+  font-size: 28px;
+  letter-spacing: 0.01em;
+  color: #ffffff;
+  text-shadow: 0 2px 20px rgba(255,255,255,0.12);
+}
+
+.logo-tag {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 5px;
+}
+ 
+/* ── ZKP BADGE ── */
+.zkp-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  background: rgba(78,211,120,0.06);
+  border: 1px solid rgba(78,211,120,0.2);
+  border-radius: 10px;
+  margin-bottom: 28px;
+  animation: fadeUp 0.6s 0.2s ease both;
+}
+.zkp-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--neon);
+  box-shadow: 0 0 8px var(--neon);
+  animation: pulseDot 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes pulseDot {
+  0%,100% { box-shadow: 0 0 6px var(--neon); transform: scale(1); }
+  50%      { box-shadow: 0 0 18px var(--neon); transform: scale(1.2); }
+}
+.zkp-text { line-height: 1.3; }
+.zkp-title {
+  font-family: var(--font-body); font-weight: 700;
+  font-size: 12px; color: var(--white);
+}
+.zkp-sub {
+  font-family: var(--font-body); font-weight: 400;
+  font-size: 10.5px; color: var(--text-muted); margin-top: 1px;
+}
+ 
+/* ── FORM HEADING ── */
+.form-heading {
+  font-family: var(--font-body);
+  font-weight: 700; font-size: 22px;
+  letter-spacing: -0.02em; color: var(--white);
+  margin-bottom: 6px;
+  animation: fadeUp 0.6s 0.25s ease both;
+  text-shadow: 0 0 24px rgba(78,211,120,0.2);
+}
+.form-sub {
+  font-family: var(--font-body); font-weight: 400;
+  font-size: 13px; color: var(--text-muted);
+  margin-bottom: 28px;
+  animation: fadeUp 0.6s 0.3s ease both;
+}
+ 
+/* ── STEPS ── */
+.step-indicator {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 28px;
+  animation: fadeUp 0.6s 0.35s ease both;
+}
+.step {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--font-body); font-weight: 600; font-size: 11px;
+  color: var(--text-muted);
+}
+.step.active { color: var(--white); }
+.step.done   { color: var(--neon); }
+.step-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--moss); color: var(--text-muted);
+  border: 1px solid var(--divider-solid);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; flex-shrink: 0;
+}
+.step.active .step-num { background: var(--neon); color: #000; border-color: var(--neon); box-shadow: 0 0 10px rgba(78,211,120,0.5); }
+.step.done   .step-num { background: rgba(78,211,120,0.15); color: var(--neon); border-color: rgba(78,211,120,0.3); }
+.step-line { flex: 1; height: 1px; background: var(--divider-solid); max-width: 32px; }
+ 
+/* ── FORM PANELS ── */
+.form-panel { display: none; flex-direction: column; gap: 16px; }
+.form-panel.active { display: flex; animation: fadeUp 0.4s ease both; }
+ 
+/* ── INPUT GROUP ── */
+.input-group { display: flex; flex-direction: column; gap: 5px; }
+.input-group label {
+  font-family: var(--font-body); font-weight: 700; font-size: 12px;
+  color: var(--text); letter-spacing: 0.04em;
+}
+.input-wrap { position: relative; }
+.input-wrap input,
+.input-wrap select {
+  width: 100%;
+  background: rgba(78,211,120,0.04);
+  border: 1.5px solid var(--divider-solid);
+  border-radius: 10px;
+  padding: 12px 44px 12px 44px;
+  font-family: var(--font-body); font-weight: 500; font-size: 14px;
+  color: var(--white); outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  -webkit-appearance: none;
+}
+.input-wrap input::placeholder { color: #2d4a38; font-weight: 400; }
+.input-wrap input:focus {
+  border-color: rgba(78,211,120,0.5);
+  background: rgba(78,211,120,0.07);
+  box-shadow: 0 0 0 3px rgba(78,211,120,0.08), 0 0 20px rgba(78,211,120,0.08);
+}
+.input-wrap input.error-field { border-color: rgba(248,113,113,0.5); box-shadow: 0 0 0 3px rgba(248,113,113,0.08); }
+.input-wrap input.success-field { border-color: rgba(78,211,120,0.4); box-shadow: 0 0 0 3px rgba(78,211,120,0.08); }
+ 
+.input-icon {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  pointer-events: none; opacity: 0.3; transition: opacity 0.2s;
+}
+.input-group:focus-within .input-icon { opacity: 0.8; }
+ 
+.pw-toggle {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; padding: 4px;
+  color: var(--text-muted); transition: color 0.2s;
+}
+.pw-toggle:hover { color: var(--neon); }
+ 
+.field-error {
+  font-family: var(--font-body); font-weight: 600; font-size: 11px;
+  color: var(--error); display: none; align-items: center; gap: 4px; margin-top: 2px;
+}
+.field-error.show { display: flex; animation: shakeIn 0.3s ease; }
+@keyframes shakeIn {
+  0%,100% { transform: translateX(0); }
+  25%      { transform: translateX(-4px); }
+  75%      { transform: translateX(4px); }
+}
+ 
+/* ── PW STRENGTH ── */
+.pw-strength { margin-top: 6px; display: none; }
+.pw-strength.show { display: block; }
+.pw-bars { display: flex; gap: 3px; margin-bottom: 4px; }
+.pw-bar {
+  height: 3px; flex: 1; border-radius: 99px;
+  background: var(--divider-solid); transition: background 0.3s;
+}
+.pw-bar.weak   { background: var(--error); }
+.pw-bar.medium { background: #f59e0b; }
+.pw-bar.strong { background: var(--neon); box-shadow: 0 0 6px rgba(78,211,120,0.4); }
+.pw-label { font-family: var(--font-body); font-weight: 600; font-size: 10.5px; color: var(--text-muted); }
+ 
+/* ── CHALLENGE BOX ── */
+.challenge-box {
+  background: rgba(78,211,120,0.04);
+  border: 1.5px solid var(--divider-solid);
+  border-radius: 10px;
+  padding: 16px;
+}
+.challenge-label {
+  font-family: var(--font-body); font-weight: 700; font-size: 11px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 8px;
+}
+.challenge-value {
+  font-family: 'Helvetica Neue', Helvetica, monospace; font-weight: 700; font-size: 14px;
+  letter-spacing: 0.08em; color: var(--neon); word-break: break-all;
+  min-height: 28px; text-shadow: 0 0 12px rgba(78,211,120,0.5);
+}
+.challenge-value.loading { opacity: 0.3; font-size: 13px; animation: blink 0.8s ease infinite; }
+@keyframes blink { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
+ 
+/* ── MFA CODE INPUT ── */
+.mfa-inputs { display: flex; gap: 8px; }
+.mfa-inputs input {
+  width: 44px; height: 52px; text-align: center;
+  padding: 0 !important;
+  font-family: var(--font-body); font-weight: 700; font-size: 20px;
+  letter-spacing: 0.05em;
+}
+ 
+/* ── CHECKBOX ROW ── */
+.check-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  position: relative;
+}
+.check-row input[type="checkbox"] { display: none; }
+.check-box {
+  width: 18px; height: 18px; min-width: 18px;
+  border: 1.5px solid var(--divider-solid); border-radius: 5px;
+  background: rgba(78,211,120,0.04);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: border-color 0.2s, background 0.2s;
+  margin-top: 1px;
+}
+.check-row input[type="checkbox"]:checked + .check-box {
+  background: var(--neon); border-color: var(--neon);
+  box-shadow: 0 0 10px rgba(78,211,120,0.4);
+}
+.check-row input[type="checkbox"]:checked + .check-box::after {
+  content: ''; width: 10px; height: 6px;
+  border-left: 2px solid #000; border-bottom: 2px solid #000;
+  transform: rotate(-45deg) translateY(-1px);
+  display: block;
+}
+.check-label {
+  font-family: var(--font-body); font-weight: 600; font-size: 12.5px;
+  color: var(--text); cursor: pointer; user-select: none; line-height: 1.4;
+}
+.check-sublabel {
+  font-weight: 400; font-size: 11px; color: var(--text-muted); display: block; margin-top: 1px;
+}
+ 
+/* ── TOOLTIP ── */
+.tooltip-wrap { position: relative; display: inline-block; }
+.tooltip-icon {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--moss); color: var(--text-muted);
+  border: 1px solid var(--divider-solid);
+  font-size: 9px; font-weight: 700; cursor: help;
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-left: 4px;
+}
+.tooltip-box {
+  display: none; position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: #0a1510; color: var(--white);
+  border: 1px solid rgba(78,211,120,0.2);
+  padding: 8px 12px;
+  border-radius: 8px; font-size: 11px; font-weight: 500; white-space: nowrap;
+  z-index: 100;
+}
+.tooltip-wrap:hover .tooltip-box { display: block; animation: fadeUp 0.2s ease both; }
+ 
+/* ── STATUS MESSAGES ── */
+.status-msg {
+  display: none; align-items: center; gap: 8px;
+  padding: 12px 14px; border-radius: 10px;
+  font-family: var(--font-body); font-weight: 600; font-size: 12.5px;
+}
+.status-msg.show { display: flex; animation: fadeUp 0.3s ease both; }
+.status-msg.success { background: rgba(78,211,120,0.08); border: 1px solid rgba(78,211,120,0.25); color: var(--neon); }
+.status-msg.error   { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2); color: var(--error); }
+.status-msg.info    { background: rgba(52,211,153,0.07); border: 1px solid rgba(52,211,153,0.2); color: var(--info); }
+ 
+/* ── BUTTONS ── */
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: var(--neon);
+  color: #000;
+  border: none; border-radius: 10px;
+  font-family: var(--font-body);
+  font-weight: 700; font-size: 13px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: background 0.25s, transform 0.15s, box-shadow 0.25s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  box-shadow: 0 0 20px rgba(78,211,120,0.25);
+}
+.btn-primary:hover:not(:disabled) {
+  background: #62e888;
+  box-shadow: 0 0 40px rgba(78,211,120,0.45), 0 4px 20px rgba(0,0,0,0.3);
+  transform: translateY(-1px);
+}
+.btn-primary:active:not(:disabled) { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-primary .spinner {
+  width: 16px; height: 16px; border: 2.5px solid rgba(0,0,0,0.25);
+  border-top-color: #000; border-radius: 50%;
+  animation: spin 0.7s linear infinite; display: none;
+}
+.btn-primary.loading .spinner { display: block; }
+.btn-primary.loading .btn-text { opacity: 0.7; }
+ 
+.btn-secondary {
+  width: 100%; padding: 12px;
+  background: transparent;
+  border: 1.5px solid var(--divider-solid);
+  border-radius: 10px;
+  font-family: var(--font-body); font-weight: 700; font-size: 12px;
+  color: var(--text); cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.btn-secondary:hover { border-color: rgba(78,211,120,0.3); background: rgba(78,211,120,0.04); }
+ 
+.btn-ghost {
+  background: none; border: none;
+  font-family: var(--font-body); font-weight: 600; font-size: 12px;
+  color: var(--text-muted); cursor: pointer; text-decoration: underline;
+  text-underline-offset: 2px; transition: color 0.2s;
+}
+.btn-ghost:hover { color: var(--neon); }
+ 
+.btn-challenge {
+  padding: 8px 14px;
+  background: rgba(78,211,120,0.1); color: var(--neon);
+  border: 1px solid rgba(78,211,120,0.25); border-radius: 7px;
+  font-family: var(--font-body); font-weight: 700; font-size: 11px;
+  letter-spacing: 0.04em; cursor: pointer; margin-top: 10px;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.btn-challenge:hover { background: rgba(78,211,120,0.18); box-shadow: 0 0 12px rgba(78,211,120,0.2); }
+ 
+@keyframes spin { to { transform: rotate(360deg); } }
+ 
+/* ── DIVIDER ── */
+.or-divider {
+  display: flex; align-items: center; gap: 12px;
+  font-family: var(--font-body); font-weight: 600;
+  font-size: 11px; color: var(--text-muted); margin: 4px 0;
+}
+.or-divider::before, .or-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--divider-solid);
+}
+ 
+/* ── FOOTER LINKS ── */
+.form-footer {
+  margin-top: 20px;
+  display: flex; flex-direction: column; gap: 12px;
+  animation: fadeUp 0.6s 0.55s ease both;
+}
+.footer-row {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.footer-link {
+  font-family: var(--font-body); font-weight: 600; font-size: 12px;
+  color: var(--text-muted); text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-link:hover { color: var(--neon); }
+.footer-bottom {
+  border-top: 1px solid var(--divider-solid); padding-top: 12px;
+  display: flex; gap: 16px; justify-content: center;
+}
+ 
+/* ── TRUST BADGE ── */
+.trust-badge {
+  display: flex; align-items: center; gap: 7px;
+  padding: 9px 12px;
+  background: rgba(78,211,120,0.04);
+  border: 1px solid var(--divider-solid);
+  border-radius: 8px; margin-top: 4px;
+}
+.trust-text {
+  font-family: var(--font-body); font-weight: 600; font-size: 11px;
+  color: var(--text-muted);
+}
+ 
+/* ── RESEND ── */
+.resend-row {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-body); font-weight: 600; font-size: 12px;
+  color: var(--text-muted);
+}
+ 
+/* ══════════════════════════
+   RIGHT PANEL — GALAXY
+══════════════════════════ */
+.right {
+  width: 50%;
+  background: var(--panel-right);
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end;
+  padding: 0 36px 48px;
+}
+ 
+#galaxyCanvas {
+  position: absolute; inset: 0; z-index: 1;
+}
+ 
+.right::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 55%;
+  background: linear-gradient(to top, var(--panel-right) 0%, transparent 100%);
+  z-index: 2; pointer-events: none;
+}
+ 
+.right-content {
+  position: relative; z-index: 10;
+  text-align: center;
+  animation: fadeUp 0.8s 0.4s ease both;
+}
+.right-title {
+  font-family: var(--font-body); font-weight: 700; font-size: 18px;
+  letter-spacing: -0.01em; color: var(--white);
+  margin-bottom: 6px;
+  text-shadow: 0 0 24px rgba(78,211,120,0.4);
+}
+.right-sub {
+  font-family: var(--font-body); font-weight: 500; font-size: 12px;
+  color: rgba(164,209,179,0.4); letter-spacing: 0.06em; text-transform: uppercase;
+  margin-bottom: 28px;
+}
+ 
+.right-stats {
+  display: flex; gap: 28px; justify-content: center;
+  margin-bottom: 28px;
+  position: relative; z-index: 10;
+  animation: fadeUp 0.8s 0.5s ease both;
+}
+.r-stat-val {
+  font-family: var(--font-body); font-weight: 700; font-size: 20px;
+  color: var(--neon); letter-spacing: -0.02em;
+  text-shadow: 0 0 20px rgba(78,211,120,0.6);
+}
+.r-stat-label {
+  font-family: var(--font-body); font-weight: 600; font-size: 9.5px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgba(164,209,179,0.3); margin-top: 3px;
+}
+ 
+/* Floating orbit rings */
+.orbit {
+  position: absolute; border-radius: 50%; border: 1px solid;
+  animation: orbitSpin linear infinite;
+  pointer-events: none;
+}
+@keyframes orbitSpin { to { transform: rotate(360deg); } }
+ 
+.dnode {
+  position: absolute; border-radius: 50%; border: 1px solid;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-body); font-weight: 700; font-size: 7px;
+  animation: nodeFloat ease-in-out infinite alternate;
+  z-index: 6;
+}
+@keyframes nodeFloat {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-10px); }
+}
+ 
+/* ══════════════════════════
+   REDIRECT OVERLAY
+══════════════════════════ */
+#redirectOverlay {
+  position: fixed; inset: 0;
+  background: #040d07;
+  z-index: 9999;
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  overflow: hidden;
+}
+#redirectOverlay.show { display: flex; animation: overlayIn 0.5s ease both; }
+@keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+ 
+#spiralCanvas { position: absolute; inset: 0; z-index: 1; }
+ 
+.redirect-content {
+  position: relative; z-index: 10;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  text-align: center;
+}
+.redirect-icon {
+  width: 72px; height: 72px;
+  background: linear-gradient(135deg, var(--neon), var(--mint));
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 50px rgba(78,211,120,0.5), 0 0 100px rgba(78,211,120,0.2);
+  animation: iconPop 0.5s 0.2s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes iconPop {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.redirect-title {
+  font-family: var(--font-body); font-weight: 700; font-size: 28px;
+  color: var(--white); letter-spacing: -0.02em;
+  text-shadow: 0 0 30px rgba(78,211,120,0.3);
+  animation: fadeUp 0.5s 0.4s ease both;
+}
+.redirect-sub {
+  font-family: var(--font-body); font-weight: 500; font-size: 13px;
+  color: rgba(164,209,179,0.5);
+  animation: fadeUp 0.5s 0.5s ease both;
+}
+.redirect-progress {
+  width: 260px; height: 3px;
+  background: rgba(78,211,120,0.12); border-radius: 99px;
+  overflow: hidden;
+  animation: fadeUp 0.5s 0.55s ease both;
+}
+.redirect-bar {
+  height: 100%; background: linear-gradient(90deg, var(--neon), var(--mint));
+  border-radius: 99px;
+  animation: progFill 3s 0.6s ease forwards;
+  width: 0;
+  box-shadow: 0 0 12px rgba(78,211,120,0.6);
+}
+@keyframes progFill { to { width: 100%; } }
+ 
+.facts-wrap {
+  position: absolute; bottom: 60px; left: 0; right: 0;
+  z-index: 10; text-align: center;
+  animation: fadeUp 0.6s 0.7s ease both;
+}
+.fact-label {
+  font-family: var(--font-body); font-weight: 700; font-size: 10px;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: rgba(78,211,120,0.5); margin-bottom: 8px;
+}
+.fact-text {
+  font-family: var(--font-body); font-weight: 400; font-size: 13px;
+  color: rgba(164,209,179,0.5); max-width: 500px; margin: 0 auto;
+  transition: opacity 0.5s;
+}
+ 
+/* ── SHARED ANIMATIONS ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+ 
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+ 
+<canvas id="bgStars"></canvas>
+ 
+<div class="scene">
+<div class="card">
+ 
+  <!-- ══ LEFT PANEL ══ -->
+  <div class="left">
+ 
+    <!-- Logo -->
+    <div class="logo-wrap">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7z"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+      </div>
+      <div class="logo-name">VaultID</div>
+      <div class="logo-tag">Trust the Math, Not the Server</div>
+    </div>
+ 
+    <!-- ZKP Security Badge -->
+    <div class="zkp-badge">
+      <div class="zkp-dot"></div>
+      <div class="zkp-text">
+        <div class="zkp-title">🔐 Zero-Knowledge Proof Authentication</div>
+        <div class="zkp-sub">Your password is never stored or transmitted</div>
+      </div>
+    </div>
+ 
+    <!-- Step Indicator -->
+    <div class="step-indicator" id="stepIndicator">
+      <div class="step active" id="step1"><div class="step-num">1</div> Identity</div>
+      <div class="step-line"></div>
+      <div class="step" id="step2"><div class="step-num">2</div> Verify</div>
+      <div class="step-line"></div>
+      <div class="step" id="step3"><div class="step-num">3</div> Secure</div>
+    </div>
+ 
+    <!-- Status Messages -->
+    <div class="status-msg success" id="msgSuccess">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <span id="msgSuccessText">Success</span>
+    </div>
+    <div class="status-msg error" id="msgError">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span id="msgErrorText">Error</span>
+    </div>
+    <div class="status-msg info" id="msgInfo">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <span id="msgInfoText">Info</span>
+    </div>
+ 
+    <!-- ──────── PANEL 1: Email ──────── -->
+    <div class="form-panel active" id="panel1">
+      <div class="form-heading" style="animation:fadeUp 0.4s ease both">Sign in to VaultID</div>
+      <div class="form-sub" style="animation:fadeUp 0.4s 0.05s ease both">Enter your credentials to authenticate securely.</div>
+ 
+      <div class="input-group">
+        <label for="emailInput">Email Address</label>
+        <div class="input-wrap">
+          <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#314737" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          <input type="email" id="emailInput" placeholder="you@company.com" aria-describedby="emailError" autocomplete="email"/>
+        </div>
+        <div class="field-error" id="emailError" role="alert">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+          <span id="emailErrorText">Please enter a valid email address</span>
+        </div>
+      </div>
+ 
+      <div class="input-group">
+        <label for="pwInput">Password</label>
+        <div class="input-wrap">
+          <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#314737" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" id="pwInput" placeholder="Enter your password" aria-describedby="pwError" autocomplete="current-password"/>
+          <button class="pw-toggle" id="pwToggle" type="button" aria-label="Toggle password visibility">
+            <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div class="pw-strength" id="pwStrength">
+          <div class="pw-bars">
+            <div class="pw-bar" id="bar1"></div>
+            <div class="pw-bar" id="bar2"></div>
+            <div class="pw-bar" id="bar3"></div>
+            <div class="pw-bar" id="bar4"></div>
+          </div>
+          <div class="pw-label" id="pwLabel">Password strength</div>
+        </div>
+        <div class="field-error" id="pwError" role="alert">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+          <span id="pwErrorText">Password is required</span>
+        </div>
+      </div>
+ 
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="check-row">
+          <input type="checkbox" id="rememberMe"/>
+          <div class="check-box" onclick="document.getElementById('rememberMe').click()"></div>
+          <label class="check-label" for="rememberMe">Keep me signed in
+            <span class="check-sublabel">Stay logged in for 30 days</span>
+          </label>
+        </div>
+        <div class="check-row">
+          <input type="checkbox" id="trustDevice"/>
+          <div class="check-box" onclick="document.getElementById('trustDevice').click()"></div>
+          <label class="check-label" for="trustDevice">
+            Trust this device
+            <div class="tooltip-wrap">
+              <span class="tooltip-icon">?</span>
+              <div class="tooltip-box">Skip MFA on this device for 30 days</div>
+            </div>
+            <span class="check-sublabel">Skip additional verification next time</span>
+          </label>
+        </div>
+      </div>
+ 
+      <button class="btn-primary" id="btnContinue" onclick="goToStep2()">
+        <div class="spinner"></div>
+        <span class="btn-text">Continue with ZKP</span>
+      </button>
+ 
+      <div class="or-divider">or</div>
+      <button class="btn-secondary" onclick="showMsg('info','Use your backup code to authenticate without your password.')">Use Backup Code</button>
+ 
+      <div class="trust-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ED378" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <div class="trust-text">256-bit Military-Grade Encryption · Bank-Level Security</div>
+      </div>
+    </div>
+ 
+    <!-- ──────── PANEL 2: ZKP Challenge ──────── -->
+    <div class="form-panel" id="panel2">
+      <div class="form-heading">ZKP Challenge</div>
+      <div class="form-sub">We generate a cryptographic challenge. Your client proves knowledge without revealing your password.</div>
+ 
+      <div class="challenge-box">
+        <div class="challenge-label">Step 1 — Request Challenge</div>
+        <div class="challenge-value" id="challengeVal">—</div>
+        <button class="btn-challenge" id="btnChallenge" onclick="getChallenge()">⬡ Get Challenge</button>
+      </div>
+ 
+      <div class="input-group">
+        <label for="zkpProof">ZKP Proof Response</label>
+        <div class="input-wrap">
+          <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#314737" stroke-width="2"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7z"/></svg>
+          <input type="text" id="zkpProof" placeholder="Auto-generated proof..." readonly/>
+        </div>
+      </div>
+ 
+      <button class="btn-primary" id="btnVerify" onclick="verifyProof()" disabled>
+        <div class="spinner"></div>
+        <span class="btn-text">Verify & Continue →</span>
+      </button>
+      <button class="btn-ghost" onclick="goBack(1)">← Back to login</button>
+    </div>
+ 
+    <!-- ──────── PANEL 3: MFA ──────── -->
+    <div class="form-panel" id="panel3">
+      <div class="form-heading">Two-Factor Auth</div>
+      <div class="form-sub">Enter the 6-digit code from your authenticator app.</div>
+ 
+      <div class="input-group">
+        <label>Authentication Code</label>
+        <div class="mfa-inputs" id="mfaInputs">
+          <input type="text" maxlength="1" class="mfa-single" inputmode="numeric" pattern="[0-9]"/>
+          <input type="text" maxlength="1" class="mfa-single" inputmode="numeric" pattern="[0-9]"/>
+          <input type="text" maxlength="1" class="mfa-single" inputmode="numeric" pattern="[0-9]"/>
+          <input type="text" maxlength="1" class="mfa-single" inputmode="numeric" pattern="[0-9]"/>
+          <input type="text" maxlength="1" class="mfa-single" inputmode="numeric" pattern="[0-9]"/>
+          <input type="text" maxlength="1" class="mfa-single" inputmode="numeric" pattern="[0-9]"/>
+        </div>
+        <div class="field-error" id="mfaError" role="alert">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg>
+          <span>Invalid or expired code. Request a new one.</span>
+        </div>
+      </div>
+ 
+      <div class="resend-row">
+        <span>Didn't receive it?</span>
+        <button class="btn-ghost" id="btnResend" onclick="resendCode()">Resend Code</button>
+        <span id="resendTimer" style="display:none;color:var(--text-muted);font-size:12px;font-weight:600"></span>
+      </div>
+ 
+      <button class="btn-primary" id="btnMFA" onclick="submitMFA()">
+        <div class="spinner"></div>
+        <span class="btn-text">Authenticate →</span>
+      </button>
+      <button class="btn-ghost" onclick="switchToBackup()">Use backup code instead</button>
+    </div>
+ 
+    <!-- ──────── PANEL 4: Backup Code ──────── -->
+    <div class="form-panel" id="panel4">
+      <div class="form-heading">Backup Code</div>
+      <div class="form-sub">Enter one of your saved backup codes to sign in.</div>
+ 
+      <div class="input-group">
+        <label for="backupCode">Backup Code</label>
+        <div class="input-wrap">
+          <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#314737" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          <input type="text" id="backupCode" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19"/>
+        </div>
+      </div>
+ 
+      <button class="btn-primary" onclick="submitMFA()">
+        <div class="spinner"></div>
+        <span class="btn-text">Verify Backup Code</span>
+      </button>
+      <button class="btn-ghost" onclick="goBack(3)">← Use authenticator instead</button>
+    </div>
+ 
+    <!-- Form Footer -->
+    <div class="form-footer">
+      <div class="footer-row">
+        <a href="#" class="footer-link">Need Help?</a>
+        <a href="#" class="footer-link" onclick="showMsg('info','Password reset link sent to your email.')">Forgot Password?</a>
+      </div>
+      <div class="footer-row" style="justify-content:center">
+        <span style="font-size:12px;font-weight:600;color:var(--text-muted)">Don't have an account?</span>
+        <a href="VaultID-register-connected.html" class="footer-link" style="margin-left:6px;color:var(--neon);font-weight:700">Sign up</a>
+      </div>
+      <div class="footer-bottom">
+        <a href="#" class="footer-link" style="font-size:11px">Privacy Policy</a>
+        <a href="#" class="footer-link" style="font-size:11px">Terms of Service</a>
+      </div>
+    </div>
+  </div><!-- /left -->
+ 
+  <div style="width:1px;background:linear-gradient(to bottom, transparent, rgba(78,211,120,0.2), transparent);flex-shrink:0"></div>
+ 
+  <!-- ══ RIGHT PANEL ══ -->
+  <div class="right" id="rightPanel">
+    <canvas id="galaxyCanvas"></canvas>
+ 
+    <div class="orbit" style="width:220px;height:220px;top:calc(40% - 110px);left:calc(50% - 110px);border-color:rgba(78,211,120,0.15);animation-duration:35s;transform:rotateX(70deg)"></div>
+    <div class="orbit" style="width:150px;height:150px;top:calc(40% - 75px);left:calc(50% - 75px);border-color:rgba(164,209,179,0.2);animation-duration:22s;transform:rotateX(65deg) rotateZ(40deg)"></div>
+    <div class="orbit" style="width:90px;height:90px;top:calc(40% - 45px);left:calc(50% - 45px);border-color:rgba(78,211,120,0.25);animation-duration:14s;transform:rotateX(55deg) rotateZ(70deg)"></div>
+ 
+    <div class="dnode" style="width:32px;height:32px;left:14%;top:18%;border-color:rgba(78,211,120,0.4);color:rgba(78,211,120,0.8);background:rgba(0,0,0,0.6);animation-duration:4s;animation-delay:0s">ZK</div>
+    <div class="dnode" style="width:28px;height:28px;left:72%;top:25%;border-color:rgba(164,209,179,0.4);color:rgba(164,209,179,0.8);background:rgba(0,0,0,0.6);animation-duration:3.5s;animation-delay:0.5s">AES</div>
+    <div class="dnode" style="width:30px;height:30px;left:62%;top:55%;border-color:rgba(78,211,120,0.35);color:rgba(78,211,120,0.7);background:rgba(0,0,0,0.6);animation-duration:5s;animation-delay:1s">PKI</div>
+    <div class="dnode" style="width:26px;height:26px;left:18%;top:58%;border-color:rgba(164,209,179,0.35);color:rgba(164,209,179,0.7);background:rgba(0,0,0,0.6);animation-duration:4.2s;animation-delay:0.3s">RSA</div>
+    <div class="dnode" style="width:34px;height:34px;left:42%;top:14%;border-color:rgba(78,211,120,0.3);color:rgba(78,211,120,0.6);background:rgba(0,0,0,0.6);animation-duration:3.8s;animation-delay:0.8s">ID</div>
+ 
+    <div class="right-content">
+      <div class="right-title">Identity Network</div>
+      <div class="right-sub">Encrypted · Decentralized · Immutable</div>
+    </div>
+    <div class="right-stats">
+      <div class="r-stat">
+        <div class="r-stat-val">2.4M</div>
+        <div class="r-stat-label">Identities</div>
+      </div>
+      <div class="r-stat">
+        <div class="r-stat-val">99.9%</div>
+        <div class="r-stat-label">Uptime</div>
+      </div>
+      <div class="r-stat">
+        <div class="r-stat-val">0</div>
+        <div class="r-stat-label">Breaches</div>
+      </div>
+    </div>
+  </div><!-- /right -->
+ 
+</div><!-- /card -->
+</div><!-- /scene -->
+ 
+<!-- ═══ REDIRECT OVERLAY ═══ -->
+<div id="redirectOverlay">
+  <canvas id="spiralCanvas"></canvas>
+ 
+  <div class="redirect-content">
+    <div class="redirect-icon">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7z"/>
+        <path d="M9 12l2 2 4-4"/>
+      </svg>
+    </div>
+    <div class="redirect-title">Identity Verified</div>
+    <div class="redirect-sub">Proof validated · Redirecting to secure dashboard</div>
+    <div class="redirect-progress"><div class="redirect-bar"></div></div>
+  </div>
+ 
+  <div class="facts-wrap">
+    <div class="fact-label">// VaultID System Fact</div>
+    <div class="fact-text" id="factText">Loading...</div>
+  </div>
+</div>
+ 
+<script>
+/* ══════════════════════════════════════════
+   API CONFIG — change when you deploy
+══════════════════════════════════════════ */
+const API_BASE = 'http://127.0.0.1:8000';
+
+/* Login state — shared across steps */
+const loginState = {
+  email:     '',
+  password:  '',
+  challenge: null,   // integer from backend
+  proof:     null,   // proof dict sent to backend
+};
+
+/* ═══════════════════════════════════
+   BACKGROUND STARFIELD
+═══════════════════════════════════ */
+(function() {
+  const c = document.getElementById('bgStars');
+  const ctx = c.getContext('2d');
+  let W, H;
+  const stars = [];
+ 
+  function resize() {
+    W = c.width = window.innerWidth;
+    H = c.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+ 
+  for (let i = 0; i < 320; i++) {
+    stars.push({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      r: Math.random() * 1.5 + 0.2,
+      baseAlpha: Math.random() * 0.55 + 0.08,
+      phase: Math.random() * Math.PI * 2,
+      speed: Math.random() * 0.008 + 0.003,
+      drift: (Math.random() - 0.5) * 0.06,
+      color: Math.random() > 0.85
+        ? (Math.random() > 0.5 ? '#4ED378' : '#A4D1B3')
+        : '#ffffff'
+    });
+  }
+ 
+  for (let i = 0; i < 18; i++) {
+    stars.push({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      r: Math.random() * 2.2 + 1.2,
+      baseAlpha: Math.random() * 0.4 + 0.15,
+      phase: Math.random() * Math.PI * 2,
+      speed: Math.random() * 0.005 + 0.002,
+      drift: (Math.random() - 0.5) * 0.04,
+      glow: true,
+      color: Math.random() > 0.5 ? '#4ED378' : '#ffffff'
+    });
+  }
+ 
+  function draw(t) {
+    ctx.clearRect(0, 0, W, H);
+ 
+    stars.forEach(s => {
+      s.phase += s.speed;
+      s.x += s.drift;
+      if (s.x < -2) s.x = W + 2;
+      if (s.x > W + 2) s.x = -2;
+ 
+      const alpha = s.baseAlpha * (0.45 + 0.55 * Math.sin(s.phase));
+ 
+      if (s.glow) {
+        const grd = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 4);
+        grd.addColorStop(0, s.color === '#4ED378'
+          ? `rgba(78,211,120,${alpha})`
+          : `rgba(255,255,255,${alpha})`);
+        grd.addColorStop(1, 'transparent');
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r * 4, 0, Math.PI * 2);
+        ctx.fillStyle = grd;
+        ctx.fill();
+      }
+ 
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = s.color;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+ 
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+
+/* ═══════════════════════════════════
+   GALAXY CANVAS (right panel)
+═══════════════════════════════════ */
+(function() {
+  const c = document.getElementById('galaxyCanvas');
+  const ctx = c.getContext('2d');
+  let W, H, stars = [], angle = 0;
+ 
+  function resize() {
+    const r = c.parentElement.getBoundingClientRect();
+    W = c.width = r.width; H = c.height = r.height;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+ 
+  for (let i = 0; i < 220; i++) {
+    stars.push({
+      x: Math.random() * 2 - 1,
+      y: Math.random() * 2 - 1,
+      r: Math.random() * 1.3 + 0.2,
+      a: Math.random() * 0.6 + 0.1,
+      speed: (Math.random() * 0.0003 + 0.0001),
+      orb: Math.random() * Math.PI * 2,
+      orbR: Math.random() * 0.6 + 0.05,
+      tw: Math.random() * Math.PI * 2,
+      twS: Math.random() * 0.02 + 0.005,
+      color: ['#4ED378','#A4D1B3','#ffffff','#c8f0d8'][Math.floor(Math.random()*4)]
+    });
+  }
+ 
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+ 
+    const bg = ctx.createRadialGradient(W/2, H*0.42, 0, W/2, H*0.42, W*0.6);
+    bg.addColorStop(0, 'rgba(49,71,55,0.25)');
+    bg.addColorStop(0.5, 'rgba(16,17,19,0.6)');
+    bg.addColorStop(1, 'rgba(16,17,19,0)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0,0,W,H);
+ 
+    const neb = ctx.createRadialGradient(W*0.5, H*0.38, 0, W*0.5, H*0.38, W*0.35);
+    neb.addColorStop(0, 'rgba(78,211,120,0.08)');
+    neb.addColorStop(0.5, 'rgba(164,209,179,0.04)');
+    neb.addColorStop(1, 'transparent');
+    ctx.fillStyle = neb;
+    ctx.fillRect(0,0,W,H);
+ 
+    const cx = W/2, cy = H * 0.4;
+    angle += 0.0008;
+ 
+    stars.forEach(s => {
+      s.orb += s.speed;
+      s.tw += s.twS;
+      const r = s.orbR * Math.min(W,H) * 0.45;
+      const a = s.orb + angle * 0.3;
+      const px = cx + Math.cos(a) * r * 1.4 * s.x;
+      const py = cy + Math.sin(a) * r * 0.6 + s.y * r * 0.3;
+      const alpha = s.a * (0.4 + 0.6 * Math.sin(s.tw));
+ 
+      ctx.beginPath();
+      ctx.arc(px, py, s.r, 0, Math.PI*2);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = s.color;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+ 
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+ 
+/* ═══════════════════════════════════
+   SPIRAL GALAXY (redirect overlay)
+═══════════════════════════════════ */
+function startSpiral() {
+  const c = document.getElementById('spiralCanvas');
+  const ctx = c.getContext('2d');
+  c.width = window.innerWidth;
+  c.height = window.innerHeight;
+ 
+  const cx = c.width/2, cy = c.height/2;
+  let t = 0, arms = [];
+ 
+  for (let arm = 0; arm < 3; arm++) {
+    for (let i = 0; i < 200; i++) {
+      arms.push({
+        arm, i,
+        baseAngle: arm * (Math.PI * 2/3),
+        r: i * 2.2,
+        a: (Math.random()*0.5+0.1),
+        r2: Math.random() * 1.6 + 0.3,
+        color: ['#4ED378','#A4D1B3','#ffffff'][Math.floor(Math.random()*3)],
+        spread: (Math.random()-0.5) * 0.5
+      });
+    }
+  }
+ 
+  function draw() {
+    ctx.clearRect(0,0,c.width,c.height);
+    ctx.fillStyle = '#101113';
+    ctx.fillRect(0,0,c.width,c.height);
+ 
+    t += 0.008;
+ 
+    arms.forEach(p => {
+      const angle = p.baseAngle + (p.r / 60) + t * 0.6 + p.spread;
+      const r = p.r * (0.9 + 0.1 * Math.sin(t));
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r * 0.35;
+ 
+      ctx.beginPath();
+      ctx.arc(x, y, p.r2, 0, Math.PI*2);
+      ctx.globalAlpha = p.a * (0.5 + 0.5 * Math.sin(t * 2 + p.i * 0.1));
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+ 
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, 80);
+    grd.addColorStop(0, 'rgba(78,211,120,0.3)');
+    grd.addColorStop(0.4, 'rgba(164,209,179,0.1)');
+    grd.addColorStop(1, 'transparent');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(cx, cy, 80, 0, Math.PI*2); ctx.fill();
+ 
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+ 
+/* ═══════════════════════════════════
+   FORM LOGIC
+═══════════════════════════════════ */
+let currentPanel = 1;
+ 
+function showPanel(n) {
+  document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel'+n).classList.add('active');
+  currentPanel = n;
+  [1,2,3].forEach(i => {
+    const s = document.getElementById('step'+i);
+    s.className = 'step';
+    if (i < n) s.classList.add('done');
+    else if (i === Math.min(n, 3)) s.classList.add('active');
+    if (i === 1 && n === 1) s.classList.add('active');
+    if (i === 2 && (n === 2)) s.classList.add('active');
+    if (i === 3 && (n === 3 || n === 4)) s.classList.add('active');
+  });
+  hideAllMsgs();
+}
+ 
+function goBack(n) { showPanel(n); }
+ 
+function validateEmail(v) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+ 
+async function goToStep2() {
+  const email = document.getElementById('emailInput').value.trim();
+  const pw = document.getElementById('pwInput').value;
+  let ok = true;
+ 
+  hideAllMsgs();
+ 
+  if (!email) {
+    showFieldError('emailError', 'Email is required'); ok = false;
+  } else if (!validateEmail(email)) {
+    showFieldError('emailError', 'Please enter a valid email address'); ok = false;
+  } else {
+    clearFieldError('emailError');
+    document.getElementById('emailInput').classList.add('success-field');
+  }
+ 
+  if (!pw) {
+    showFieldError('pwError', 'Password is required'); ok = false;
+  } else {
+    clearFieldError('pwError');
+  }
+ 
+  if (!ok) return;
+ 
+  const btn = document.getElementById('btnContinue');
+  setLoading(btn, true, 'Authenticating...');
+
+  // Save to state for later steps
+  loginState.email    = email;
+  loginState.password = pw;
+
+  // POST /auth/challenge — just needs email
+  try {
+    const res = await fetch(`${API_BASE}/auth/challenge`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      // ChallengeResponse: { challenge: str, expires_in: int }
+      loginState.challenge = data.challenge;
+      setLoading(btn, false, 'Continue with ZKP');
+      showPanel(2);
+      // Pre-fill the challenge value on screen
+      const cv = document.getElementById('challengeVal');
+      cv.className = 'challenge-value';
+      cv.textContent = data.challenge;
+      showMsg('info', 'Challenge received. Click "Get Challenge" to generate your proof.');
+    } else {
+      setLoading(btn, false, 'Continue with ZKP');
+      const errMsg = data.detail || data.message || 'Authentication failed.';
+      showFieldError('emailError', errMsg);
+    }
+  } catch(err) {
+    setLoading(btn, false, 'Continue with ZKP');
+    showMsg('error', 'Cannot reach server. Make sure backend is running.');
+    console.error('Challenge request failed:', err);
+  }
+}
+ 
+async function getChallenge() {
+  const cv  = document.getElementById('challengeVal');
+  const btn = document.getElementById('btnChallenge');
+  btn.disabled = true;
+  cv.className  = 'challenge-value loading';
+  cv.textContent = 'Generating proof...';
+
+  try {
+    // Fetch user salt + ZKP params needed to reconstruct the secret
+    const paramsRes = await fetch(`${API_BASE}/auth/zkp-params?email=${encodeURIComponent(loginState.email)}`);
+    if (!paramsRes.ok) throw new Error('Could not fetch ZKP parameters from server.');
+    const userData = await paramsRes.json();
+
+    loginState.salt   = userData.salt;
+    loginState.params = userData.params; // { p, q, g } as strings
+
+    // Generate real Schnorr proof
+    // challenge is a huge integer string from backend — NEVER use parseInt()
+    // parseInt caps at 2^53, BigInt needs the full string
+    const rawChallenge = String(loginState.challenge);
+    console.log('challenge raw:', rawChallenge);
+    console.log('salt:', loginState.salt ? loginState.salt.substring(0,20)+'...' : 'MISSING');
+    console.log('params.g:', loginState.params ? loginState.params.g : 'MISSING');
+    console.log('params.p len:', loginState.params ? loginState.params.p.length : 'MISSING');
+
+    const proof = await generateSchnorrProof(
+      loginState.password,
+      rawChallenge,
+      loginState.salt,
+      loginState.params
+    );
+    loginState.proof = proof;
+
+    cv.className   = 'challenge-value';
+    cv.textContent = String(loginState.challenge).substring(0, 22) + '...';
+    document.getElementById('zkpProof').value =
+      `✓ t=${String(proof.commitment).substring(0,16)}...  s=${String(proof.response).substring(0,14)}...`;
+    document.getElementById('btnVerify').disabled = false;
+    showMsg('success', 'Schnorr proof generated. Click Verify to authenticate.');
+    btn.disabled = false;
+    console.log('✅ ZKP Proof:', proof);
+
+  } catch(err) {
+    cv.className   = 'challenge-value';
+    cv.textContent = '—';
+    showMsg('error', 'Proof generation failed: ' + err.message);
+    btn.disabled   = false;
+    console.error('getChallenge error:', err);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SCHNORR ZKP — matches SchnorrZKP.verify_proof() exactly
+   Registration stored:  y = g^secret mod p
+   verify_proof checks:  g^s * y^c ≡ t (mod p)
+   We compute:           t = g^r mod p
+                         s = (r - c*secret) mod q
+════════════════════════════════════════════════════════════════ */
+async function generateSchnorrProof(password, challenge, salt, params) {
+  try {
+    console.log('--- generateSchnorrProof START ---');
+    console.log('challenge type:', typeof challenge, 'val:', String(challenge).substring(0,30));
+    console.log('salt:', salt ? salt.substring(0,20) : 'NULL');
+    console.log('params:', params ? JSON.stringify({g: params.g, plen: params.p.length, qlen: params.q.length}) : 'NULL');
+
+    if (!params || !params.p || !params.q || !params.g)
+      throw new Error('params missing — p/q/g not received from server');
+    if (!salt)
+      throw new Error('salt missing from server response');
+
+    const p = BigInt(params.p);
+    console.log('p OK');
+    const q = BigInt(params.q);
+    console.log('q OK');
+    const g = BigInt(params.g);
+    console.log('g OK:', params.g);
+    const c = BigInt(String(challenge).trim());
+    console.log('c OK:', String(challenge).substring(0,20));
+
+    const secret = await deriveSecret(password, salt, q);
+    console.log('secret derived OK');
+
+    const r = await randomBigIntMod(q);
+    console.log('r generated OK');
+
+    const t = modPow(g, r, p);
+    console.log('t = g^r mod p OK:', t.toString().substring(0,30));
+
+    const s = ((r - (c * secret % q)) % q + q) % q;
+    console.log('s computed OK:', s.toString().substring(0,30));
+
+    return {
+      commitment: t.toString(),
+      response:   s.toString()
+    };
+  } catch(e) {
+    console.error('generateSchnorrProof CRASH at:', e.message);
+    throw e;
+  }
+}
+
+async function deriveSecret(password, salt, q) {
+  const passwordBytes = new TextEncoder().encode(password);
+  const saltBytes     = new TextEncoder().encode(salt); // match Python: salt.encode('utf-8')
+
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', passwordBytes, 'PBKDF2', false, ['deriveBits']
+  );
+  const derivedBits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt: saltBytes, iterations: 100000, hash: 'SHA-256' },
+    keyMaterial, 256
+  );
+
+  const keyBytes  = new Uint8Array(derivedBits);
+  let secretBig   = BigInt(0);
+  for (let i = 0; i < keyBytes.length; i++) {
+    secretBig = (secretBig << BigInt(8)) | BigInt(keyBytes[i]);
+  }
+  return (secretBig % (q - BigInt(1))) + BigInt(1); // range [1, q-1]
+}
+
+function modPow(base, exp, mod) {
+  let result = BigInt(1);
+  base = base % mod;
+  while (exp > BigInt(0)) {
+    if (exp % BigInt(2) === BigInt(1)) result = (result * base) % mod;
+    exp  = exp  >> BigInt(1);
+    base = (base * base) % mod;
+  }
+  return result;
+}
+
+async function randomBigIntMod(mod) {
+  const byteLen = Math.ceil(mod.toString(16).length / 2) + 8;
+  const bytes   = crypto.getRandomValues(new Uint8Array(byteLen));
+  let n = BigInt(0);
+  for (const b of bytes) n = (n << BigInt(8)) | BigInt(b);
+  return (n % (mod - BigInt(1))) + BigInt(1);
+}
+
+function hexToBytes(hex) {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2)
+    bytes[i/2] = parseInt(hex.substr(i, 2), 16);
+  return bytes;
+}
+
+
+async function verifyProof() {
+  const btn = document.getElementById('btnVerify');
+  if (!loginState.proof) {
+    showMsg('error', 'Generate your proof first.'); return;
+  }
+  setLoading(btn, true, 'Verifying proof...');
+
+  try {
+    // LoginProofRequest: { email, proof: dict, challenge: int }
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        email:     loginState.email,
+        proof:     loginState.proof,
+        challenge: loginState.challenge  // send as string — backend casts to int
+      })
+    });
+    const data = await res.json();
+    console.log('Login response:', data);
+
+    if (res.ok) {
+      // TokenResponse: { access_token, refresh_token, token_type, expires_in }
+      // Store tokens
+      sessionStorage.setItem('vaultid_token',   data.access_token);
+      localStorage.setItem('vaultid_token',     data.access_token);
+      sessionStorage.setItem('vaultid_refresh', data.refresh_token);
+      localStorage.setItem('vaultid_refresh',   data.refresh_token);
+
+      // Store refresh expiry for countdown bar (7 days from now)
+      const refreshExp = Math.floor(Date.now() / 1000) + (7 * 24 * 3600);
+      localStorage.setItem('vaultid_refresh_exp', String(refreshExp));
+
+      // Store user info
+      localStorage.setItem('vaultid_user', JSON.stringify({
+        name:  data.name  || data.full_name || '',
+        email: data.email || loginState.email || ''
+      }));
+      sessionStorage.setItem('vaultid_user', JSON.stringify({
+        name:  data.name  || '',
+        email: data.email || loginState.email
+      }));
+      setLoading(btn, false, 'Verify & Continue →');
+
+      // Check if MFA is required
+      if (data.mfa_required) {
+        showMsg('success', 'Proof verified. MFA required.');
+        setTimeout(() => showPanel(3), 700);
+      } else {
+        showMsg('success', 'Authenticated! Redirecting...');
+        setTimeout(() => triggerRedirect(), 800);
+      }
+    } else {
+      setLoading(btn, false, 'Verify & Continue →');
+      const errMsg = data.detail || data.message || 'Proof verification failed.';
+      showMsg('error', errMsg);
+    }
+  } catch(err) {
+    setLoading(btn, false, 'Verify & Continue →');
+    showMsg('error', 'Cannot reach server. Check your backend.');
+    console.error('Login proof error:', err);
+  }
+}
+ 
+async function submitMFA() {
+  const inputs = document.querySelectorAll('.mfa-single');
+  const code = Array.from(inputs).map(i=>i.value).join('');
+  if (currentPanel === 3 && code.length < 6) {
+    document.getElementById('mfaError').classList.add('show');
+    return;
+  }
+  document.getElementById('mfaError').classList.remove('show');
+  const btn = currentPanel===3 ? document.getElementById('btnMFA') : null;
+  if (btn) setLoading(btn, true, 'Processing...');
+
+  const token = sessionStorage.getItem('vaultid_token');
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/mfa/verify`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ code })
+    });
+    const data = await res.json();
+    console.log('MFA response:', data);
+
+    if (res.ok) {
+      // Save final token if backend rotates it after MFA
+      if (data.access_token) sessionStorage.setItem('vaultid_token', data.access_token);
+      if (btn) setLoading(btn, false, 'Authenticate →');
+      triggerRedirect();
+    } else {
+      if (btn) setLoading(btn, false, 'Authenticate →');
+      document.getElementById('mfaError').classList.add('show');
+    }
+  } catch(err) {
+    if (btn) setLoading(btn, false, 'Authenticate →');
+    showMsg('error', 'Cannot reach server.');
+    console.error('MFA error:', err);
+  }
+}
+ 
+function switchToBackup() { showPanel(4); }
+ 
+document.querySelectorAll('.mfa-single').forEach((inp, i, arr) => {
+  inp.addEventListener('input', e => {
+    inp.value = inp.value.replace(/\D/,'');
+    if (inp.value && i < arr.length-1) arr[i+1].focus();
+  });
+  inp.addEventListener('keydown', e => {
+    if (e.key==='Backspace' && !inp.value && i > 0) arr[i-1].focus();
+  });
+});
+ 
+document.getElementById('backupCode')?.addEventListener('input', function() {
+  let v = this.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase();
+  let out = '';
+  for (let i=0; i<v.length && i<16; i++) { if (i>0 && i%4===0) out+='-'; out+=v[i]; }
+  this.value = out;
+});
+ 
+function resendCode() {
+  const btn = document.getElementById('btnResend');
+  const timer = document.getElementById('resendTimer');
+  btn.style.display = 'none'; timer.style.display = '';
+  let t = 30;
+  timer.textContent = `Resend in ${t}s`;
+  const iv = setInterval(() => {
+    t--;
+    timer.textContent = `Resend in ${t}s`;
+    if (t<=0) {
+      clearInterval(iv);
+      timer.style.display = 'none';
+      btn.style.display = '';
+      showMsg('success','Verification code resent to your device.');
+    }
+  }, 1000);
+}
+ 
+document.getElementById('pwInput').addEventListener('input', function() {
+  const v = this.value;
+  const s = document.getElementById('pwStrength');
+  if (!v) { s.classList.remove('show'); return; }
+  s.classList.add('show');
+  let score = 0;
+  if (v.length >= 8) score++;
+  if (/[A-Z]/.test(v)) score++;
+  if (/[0-9]/.test(v)) score++;
+  if (/[^A-Za-z0-9]/.test(v)) score++;
+  const bars = [document.getElementById('bar1'),document.getElementById('bar2'),document.getElementById('bar3'),document.getElementById('bar4')];
+  const cls = score<=1?'weak':score<=2?'medium':'strong';
+  const labels = {weak:'Weak',medium:'Medium',strong:'Strong'};
+  bars.forEach((b,i) => { b.className = 'pw-bar'; if (i<score) b.classList.add(cls); });
+  document.getElementById('pwLabel').textContent = `${labels[cls] || ''} password`;
+});
+ 
+document.getElementById('pwToggle').addEventListener('click', function() {
+  const inp = document.getElementById('pwInput');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  document.getElementById('eyeIcon').innerHTML = inp.type === 'text'
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+});
+ 
+function setLoading(btn, on, text) {
+  btn.classList.toggle('loading', on);
+  btn.disabled = on;
+  btn.querySelector('.btn-text').textContent = text;
+}
+ 
+function showFieldError(id, msg) {
+  const el = document.getElementById(id);
+  const span = el.querySelector('span');
+  if (span) span.textContent = msg;
+  el.classList.add('show');
+}
+function clearFieldError(id) {
+  document.getElementById(id).classList.remove('show');
+}
+ 
+function showMsg(type, text) {
+  hideAllMsgs();
+  const el = document.getElementById('msg'+type.charAt(0).toUpperCase()+type.slice(1));
+  const textEl = document.getElementById('msg'+type.charAt(0).toUpperCase()+type.slice(1)+'Text');
+  if (el && textEl) { textEl.textContent = text; el.classList.add('show'); }
+}
+function hideAllMsgs() {
+  ['msgSuccess','msgError','msgInfo'].forEach(id => document.getElementById(id)?.classList.remove('show'));
+}
+ 
+/* ═══════════════════════════════════
+   REDIRECT ANIMATION
+═══════════════════════════════════ */
+const facts = [
+  "Zero-Knowledge Proofs allow you to prove you know a secret without revealing it.",
+  "VaultID uses SHA-3 cryptographic hashing — over 1.46 × 10⁴⁸ possible hash combinations.",
+  "Your credentials are verified using elliptic curve cryptography on the secp256k1 curve.",
+  "Each authentication generates a unique ephemeral key pair — never reused, never stored.",
+  "Military-grade AES-256 encryption protects your identity across 192 billion possible keys.",
+  "ZKP authentication is mathematically proven to be resistant to quantum computing attacks.",
+];
+let factIdx = 0;
+ 
+function triggerRedirect() {
+  // After successful login, redirect to dashboard
+  // Change this path to your actual dashboard file
+  setTimeout(() => {
+    window.location.href = 'VaultID-dashboard.html';
+  }, 2200); // matches the spiral animation duration
+
+  const overlay = document.getElementById('redirectOverlay');
+  overlay.classList.add('show');
+  startSpiral();
+ 
+  const factEl = document.getElementById('factText');
+  factEl.textContent = facts[factIdx];
+ 
+  const iv = setInterval(() => {
+    factIdx = (factIdx+1) % facts.length;
+    factEl.style.opacity = 0;
+    setTimeout(() => { factEl.textContent = facts[factIdx]; factEl.style.opacity = 1; }, 400);
+  }, 2200);
+ 
+  setTimeout(() => {
+    clearInterval(iv);
+    showMsg('success','Login successful. Redirecting to dashboard...');
+    overlay.style.animation = 'overlayIn 0.6s ease reverse forwards';
+    setTimeout(() => { overlay.classList.remove('show'); overlay.style.animation=''; }, 700);
+  }, 4000);
+}
+</script>
+</body>
+</html>

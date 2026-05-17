@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Signing you in — thinkED Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream: #f7f4ef;
+      --orange: #f05a28;
+      --dark: #1a1714;
+      --muted: #7a7168;
+      --border: #e2ddd6;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 24px;
+      color: var(--dark);
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(240,90,40,0.07) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(240,90,40,0.05) 0%, transparent 40%);
+      pointer-events: none;
+    }
+
+    .card {
+      position: relative;
+      z-index: 1;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px 44px;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 4px 32px rgba(26,23,20,0.07);
+    }
+
+    /* Spinner */
+    .spinner-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+
+    .spinner {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: var(--dark);
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+
+    .spinner::after {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      border-top-color: var(--orange);
+      animation: spin 0.9s linear infinite;
+    }
+
+    .spinner svg { width: 24px; height: 24px; fill: #fff; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* success state */
+    .spinner.success {
+      background: var(--orange);
+      animation: pop 0.3s ease both;
+    }
+    .spinner.success::after { display: none; }
+
+    @keyframes pop {
+      0%   { transform: scale(0.8); }
+      60%  { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+
+    .card h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.6;
+      font-weight: 300;
+    }
+
+    /* error state */
+    .error-box {
+      background: #fff4f1;
+      border: 1px solid #fbd5c8;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 20px;
+      font-size: 0.85rem;
+      color: #c94416;
+      text-align: left;
+      display: none;
+    }
+
+    .error-box strong { display: block; margin-bottom: 4px; }
+
+    .progress-bar {
+      width: 100%;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 28px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--orange);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 32px;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-dot {
+      width: 10px; height: 10px;
+      background: var(--orange);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">
+    <div class="brand-dot"></div>
+    thinkED Academy
+  </div>
+
+  <div class="spinner-wrap">
+    <div class="spinner" id="spinner">
+      <svg viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+    </div>
+  </div>
+
+  <h1 id="status-title">Verifying your identity…</h1>
+  <p id="status-msg">Securely exchanging credentials with VaultID. This will only take a moment.</p>
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress"></div>
+  </div>
+
+  <div class="error-box" id="error-box">
+    <strong>Something went wrong</strong>
+    <span id="error-detail">Unable to complete sign-in. Please try again.</span>
+  </div>
+</div>
+
+<script>
+(async () => {
+  const params   = new URLSearchParams(window.location.search);
+  const error    = params.get('error');
+  const code     = params.get('code');
+
+  // Animate progress bar
+  const bar = document.getElementById('progress');
+  let pct = 10;
+  const tick = setInterval(() => {
+    pct = Math.min(pct + Math.random() * 8, 85);
+    bar.style.width = pct + '%';
+  }, 300);
+
+  // ── Error from IdP ──────────────────────────────────────────
+  if (error === 'access_denied') {
+    clearInterval(tick);
+    window.location.href = 'login.html?error=access_denied';
+    return;
+  }
+
+  if (!code) {
+    clearInterval(tick);
+    showError('No authorization code received. Please go back and try again.');
+    return;
+  }
+
+  // ── Exchange code for token ─────────────────────────────────
+  try {
+    const res = await fetch('http://127.0.0.1:8000/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        grant_type:    'authorization_code',
+        code:          code,
+        redirect_uri:  'http://localhost:5500/callback.html',
+        client_id:     'thinked_client',
+        client_secret: 'thinked_secret_2026'
+      })
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error_description || `Server error ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    // ── Persist session ─────────────────────────────────────────
+    sessionStorage.setItem('thinked_authed', 'true');
+
+    // Extract user info — adapt field names to your token response shape
+    const user = {
+      name:  data.user?.name  || data.name  || data.sub || 'Learner',
+      email: data.user?.email || data.email || ''
+    };
+
+    sessionStorage.setItem('thinked_user', JSON.stringify(user));
+    localStorage.setItem('thinked_user', JSON.stringify(user));
+
+    // Store token too (handy for API calls)
+    if (data.access_token) {
+      sessionStorage.setItem('thinked_token', data.access_token);
+      localStorage.setItem('thinked_access_token', data.access_token);
+      localStorage.setItem('thinked_issued_at', String(Math.floor(Date.now()/1000)));
+      localStorage.setItem('thinked_expires_at', String(Math.floor(Date.now()/1000) + (data.expires_in || 900)));
+      localStorage.setItem('thinked_expires_in', String(data.expires_in || 900));
+    }
+
+    // ── Success UI then redirect ────────────────────────────────
+    clearInterval(tick);
+    bar.style.width = '100%';
+
+    const spinner = document.getElementById('spinner');
+    spinner.classList.add('success');
+    spinner.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>`;
+
+    document.getElementById('status-title').textContent = `Welcome back, ${user.name.split(' ')[0]}!`;
+    document.getElementById('status-msg').textContent   = 'Identity verified. Redirecting you to your dashboard…';
+
+    // Pass token to VaultID dashboard via URL params then redirect to thinkED
+    const bridgeUrl = 'http://127.0.0.1:8000/oauth-bridge.html' +
+      '?token=' + encodeURIComponent(data.access_token) +
+      '&name=' + encodeURIComponent(user.name) +
+      '&email=' + encodeURIComponent(user.email) +
+      '&expires_at=' + encodeURIComponent(Math.floor(Date.now()/1000) + (data.expires_in || 900)) +
+      '&issued_at=' + encodeURIComponent(Math.floor(Date.now()/1000)) +
+      '&expires_in=' + encodeURIComponent(data.expires_in || 900) +
+      '&redirect=' + encodeURIComponent('http://localhost:5500/index.html');
+    setTimeout(() => { window.location.href = bridgeUrl; }, 1400);
+
+  } catch (err) {
+    clearInterval(tick);
+    showError(err.message || 'Unexpected error during sign-in.');
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────
+  function showError(detail) {
+    bar.style.width = '0%';
+    document.getElementById('status-title').textContent = 'Sign-in failed';
+    document.getElementById('status-msg').textContent   = 'We couldn\'t complete the OAuth handshake.';
+    document.getElementById('error-detail').textContent = detail;
+    document.getElementById('error-box').style.display  = 'block';
+    document.getElementById('spinner').style.opacity    = '0.3';
+    // Let user read the error before bouncing back
+    setTimeout(() => {
+      window.location.href = 'login.html?error=access_denied';
+    }, 3500);
+  }
+})();
+</script>
+</body>
+</html>

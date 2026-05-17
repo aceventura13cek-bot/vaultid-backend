@@ -1,5 +1,10 @@
-node_modules/
+venv/
 __pycache__/
 *.pyc
-venv/
+node_modules/
 .env
+*.keras
+*.pkl
+/tmp/
+*.log
+.DS_Store

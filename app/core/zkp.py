@@ -1,188 +1,128 @@
 """
-Zero-Knowledge Proof Implementation
-Using Schnorr Protocol + Fiat-Shamir Heuristic
-
-CRITICAL: Password NEVER stored, NEVER transmitted
+Zero-Knowledge Proof Authentication Module
+Schnorr Protocol + Fiat-Shamir Heuristic
 """
 
 import hashlib
 import secrets
+import json
+import os
 from typing import Dict, Tuple
-from Crypto.Util.number import getPrime
-from passlib.hash import pbkdf2_sha256
 
+PARAMS_FILE = os.path.join(os.path.dirname(__file__), "zkp_params.json")
 
 class SchnorrZKP:
-    """
-    Schnorr Zero-Knowledge Proof
-    
-    How it works:
-    1. Registration: password → secret → public_key (stored in DB)
-    2. Login: server sends challenge
-    3. Client creates proof using secret (WITHOUT revealing it)
-    4. Server verifies proof using public_key
-    
-    Result: Server verifies user knows password WITHOUT seeing it!
-    """
-    
-    def __init__(self, key_size: int = 2048):
-        """
-        Initialize ZKP parameters
-        
-        p: large prime number
-        q: (p-1)/2 (subgroup)
-        g: generator (2)
-        """
-        print(f"⚙️ Generating ZKP parameters ({key_size} bits)...")
-        self.p = getPrime(key_size)
-        self.q = (self.p - 1) // 2
-        self.g = 2
-        print(f"✅ ZKP parameters generated")
-    
-    def get_parameters(self) -> Dict:
-        """
-        Get ZKP parameters for storage in database
-        """
+    def __init__(self, bits: int = 2048):
+        self.bits = bits
+        self.p, self.q, self.g = self._load_or_generate_parameters()
+
+    def _load_or_generate_parameters(self) -> Tuple[int, int, int]:
+        # ── Load existing params if saved ──
+        if os.path.exists(PARAMS_FILE):
+            print("♻️  Loading saved ZKP parameters...")
+            with open(PARAMS_FILE, 'r') as f:
+                d = json.load(f)
+            p, q, g = int(d['p']), int(d['q']), int(d['g'])
+            print("✅ ZKP parameters loaded from disk")
+            return p, q, g
+
+        # ── Generate fresh params (first run only) ──
+        print(f"⚙️  Generating ZKP parameters ({self.bits} bits)...")
+        q = self._generate_prime(self.bits // 2)
+        p = 2 * q + 1
+        while True:
+            h = secrets.randbelow(p - 2) + 2
+            g = pow(h, 2, p)
+            if pow(g, q, p) == 1 and g != 1:
+                break
+
+        # ── Save for all future restarts ──
+        with open(PARAMS_FILE, 'w') as f:
+            json.dump({'p': str(p), 'q': str(q), 'g': str(g)}, f)
+        print(f"✅ ZKP parameters generated and saved to {PARAMS_FILE}")
+        return p, q, g
+
+    def _generate_prime(self, bits: int) -> int:
+        while True:
+            candidate = secrets.randbits(bits)
+            candidate |= (1 << bits - 1) | 1
+            if self._is_prime(candidate):
+                return candidate
+
+    def _is_prime(self, n: int, k: int = 20) -> bool:
+        if n < 2: return False
+        if n == 2 or n == 3: return True
+        if n % 2 == 0: return False
+        r, d = 0, n - 1
+        while d % 2 == 0:
+            r += 1
+            d //= 2
+        for _ in range(k):
+            a = secrets.randbelow(n - 3) + 2
+            x = pow(a, d, n)
+            if x == 1 or x == n - 1: continue
+            for _ in range(r - 1):
+                x = pow(x, 2, n)
+                if x == n - 1: break
+            else:
+                return False
+        return True
+
+    def register_user(self, password: str) -> Dict:
+        salt = secrets.token_hex(32)
+        secret = self._derive_secret(password, salt)
+        public_key = pow(self.g, secret, self.p)
         return {
-            "p": str(self.p),
-            "q": str(self.q),
-            "g": str(self.g)
+            'salt': salt,
+            'public_key': str(public_key),
+            'params': {
+                'p': str(self.p),
+                'q': str(self.q),
+                'g': str(self.g)
+            }
         }
-    
-    def derive_secret_from_password(self, password: str, salt: str) -> int:
-        """
-        CLIENT-SIDE: Derive secret from password
-        
-        ⚠️ In production, this happens on CLIENT (browser/app)
-        Password NEVER sent to server!
-        """
-        # Use PBKDF2 for key derivation
-        hash_output = pbkdf2_sha256.hash(
-            password,
-            salt=salt.encode(),
-            rounds=100000
+
+    def _derive_secret(self, password: str, salt: str) -> int:
+        key = hashlib.pbkdf2_hmac(
+            'sha256',
+            password.encode('utf-8'),
+            salt.encode('utf-8'),
+            iterations=100000,
+            dklen=32
         )
-        
-        # Convert to integer
-        secret = int(hashlib.sha256(hash_output.encode()).hexdigest(), 16) % self.q
+        secret = int.from_bytes(key, 'big') % (self.q - 1) + 1
         return secret
-    
-    def compute_public_key(self, secret: int) -> int:
-        """
-        Compute public key from secret
-        
-        public_key = g^secret mod p
-        
-        This is stored in database (NOT the secret!)
-        """
-        return pow(self.g, secret, self.p)
-    
-    def register_user(self, password: str, salt: str = None) -> Tuple[str, int, Dict]:
-        """
-        Registration flow
-        
-        ⚠️ In production:
-        - Client generates salt
-        - Client derives secret from password
-        - Client computes public_key
-        - Client sends ONLY (salt, public_key) to server
-        - Password NEVER transmitted!
-        
-        Returns: (salt, public_key, parameters)
-        """
-        if salt is None:
-            salt = secrets.token_hex(32)
-        
-        # Derive secret (CLIENT-SIDE in production!)
-        secret = self.derive_secret_from_password(password, salt)
-        
-        # Compute public key
-        public_key = self.compute_public_key(secret)
-        
-        # Get parameters
-        params = self.get_parameters()
-        
-        return salt, public_key, params
-    
+
     def generate_challenge(self) -> int:
-        """
-        SERVER-SIDE: Generate random challenge for login
-        """
-        return secrets.randbelow(self.q)
-    
-    def create_proof(self, secret: int, challenge: int) -> Dict:
-        """
-        CLIENT-SIDE: Create zero-knowledge proof
-        
-        Schnorr Protocol:
-        1. Pick random r
-        2. Compute commitment: t = g^r mod p
-        3. Compute response: s = r - c*secret mod q
-        
-        Result: Proof that user knows secret WITHOUT revealing it!
-        """
-        # Random nonce
-        r = secrets.randbelow(self.q)
-        
-        # Commitment
-        t = pow(self.g, r, self.p)
-        
-        # Fiat-Shamir hash
-        c_hash = hashlib.sha256(
-            str(challenge).encode() + str(t).encode()
-        ).hexdigest()
-        c = int(c_hash, 16) % self.q
-        
-        # Response
-        s = (r - c * secret) % self.q
-        
-        return {
-            "commitment": str(t),
-            "response": str(s),
-            "challenge_used": challenge
-        }
-    
-    def verify_proof(
-        self,
-        proof: Dict,
-        public_key: int,
-        challenge: int,
-        params: Dict
-    ) -> bool:
-        """
-        SERVER-SIDE: Verify zero-knowledge proof
-        
-        Check if: g^s * public_key^c == t (mod p)
-        
-        If true: User knows the password!
-        If false: Authentication failed
-        
-        ✅ Server verifies WITHOUT knowing password!
-        """
+        return secrets.randbelow(self.q - 1) + 1
+
+    def verify_proof(self, proof: Dict, public_key: int,
+                     challenge: int, params: Dict) -> bool:
         try:
-            t = int(proof["commitment"])
-            s = int(proof["response"])
-            
-            # Get parameters
-            p = int(params["p"])
-            q = int(params["q"])
-            g = int(params["g"])
-            
-            # Recompute challenge hash
-            c_hash = hashlib.sha256(
-                str(challenge).encode() + str(t).encode()
-            ).hexdigest()
-            c = int(c_hash, 16) % q
-            
-            # Verify: g^s * public_key^c == t (mod p)
-            left_side = (pow(g, s, p) * pow(public_key, c, p)) % p
-            
-            return left_side == t
-        
-        except Exception as e:
+            t = int(proof['commitment'])
+            s = int(proof['response'])
+            p = int(params['p'])
+            q = int(params['q'])
+            g = int(params['g'])
+
+            # g^s * y^c mod p  ≟  t
+            left = (pow(g, s, p) * pow(public_key, challenge, p)) % p
+            result = left == t
+            if not result:
+                print(f"❌ ZKP math failed: g^s*y^c={str(left)[:30]}... t={str(t)[:30]}...")
+            return result
+        except (KeyError, TypeError, ValueError) as e:
             print(f"❌ Proof verification error: {e}")
             return False
 
 
-# Global ZKP instance
-zkp = SchnorrZKP()
+_zkp_instance = None
+
+def get_zkp() -> SchnorrZKP:
+    global _zkp_instance
+    if _zkp_instance is None:
+        _zkp_instance = SchnorrZKP(bits=2048)
+    return _zkp_instance
+
+# Global instance
+zkp = get_zkp()

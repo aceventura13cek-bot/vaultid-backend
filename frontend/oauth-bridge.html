@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>VaultID — Completing sign-in</title>
+  <style>
+    body {
+      background: #0a0a0f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      font-family: sans-serif;
+      color: #fff;
+    }
+    .msg { text-align: center; opacity: 0.7; font-size: 14px; }
+  </style>
+</head>
+<body>
+<div class="msg">Completing sign-in...</div>
+<script>
+  // This page runs on 127.0.0.1:8000 so it can write to VaultID's localStorage
+  const params = new URLSearchParams(window.location.search);
+  const token     = params.get('token');
+  const name      = params.get('name');
+  const email     = params.get('email');
+  const expiresAt = params.get('expires_at');
+  const issuedAt  = params.get('issued_at');
+  const expiresIn = params.get('expires_in');
+  const redirect  = params.get('redirect');
+
+  if (token) {
+    // Save to 127.0.0.1:8000 localStorage so dashboard can read it
+    localStorage.setItem('thinked_access_token', token);
+    localStorage.setItem('thinked_user', JSON.stringify({ name, email }));
+    localStorage.setItem('thinked_expires_at', expiresAt);
+    localStorage.setItem('thinked_issued_at', issuedAt);
+    localStorage.setItem('thinked_expires_in', expiresIn);
+    localStorage.setItem('thinked_issued_at', issuedAt);
+  }
+
+  // Redirect back to thinkED
+  setTimeout(() => {
+    window.location.href = redirect || 'http://localhost:5500/index.html';
+  }, 500);
+</script>
+</body>
+</html>

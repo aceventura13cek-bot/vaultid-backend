@@ -33,9 +33,9 @@ class Session(Base):
     current_access_token_jti_hash = Column(String(64))
     
     # Session Metadata
-    created_at = Column(TIMESTAMP, default=lambda: datetime.now(timezone.utc))
-    last_activity = Column(TIMESTAMP, default=lambda: datetime.now(timezone.utc))
-    expires_at = Column(TIMESTAMP, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
+    last_activity = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
+    expires_at = Column(TIMESTAMP(timezone=True), nullable=False)
     is_active = Column(Boolean, default=True)
     
     # Security
@@ -53,9 +53,9 @@ class TokenBlacklist(Base):
     jti_hash = Column(String(64), unique=True, nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     token_type = Column(String(20), nullable=False)
-    revoked_at = Column(TIMESTAMP, default=lambda: datetime.now(timezone.utc))
+    revoked_at = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))
     reason = Column(String(50))
-    expires_at = Column(TIMESTAMP, nullable=False)
+    expires_at = Column(TIMESTAMP(timezone=True), nullable=False)
 
 
 class TokenUsageLog(Base):
@@ -84,4 +84,4 @@ class TokenUsageLog(Base):
     anomaly_reason = Column(Text)
     
     # Timestamp
-    timestamp = Column(TIMESTAMP, default=lambda: datetime.now(timezone.utc))
+    timestamp = Column(TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc))

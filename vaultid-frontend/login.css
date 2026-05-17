@@ -1,0 +1,205 @@
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+font-family:'Alegreya', serif;
+background:#f7f7f7;
+}
+
+
+
+/* NAVBAR */
+
+.navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:20px 70px;
+background:white;
+border-bottom:1px solid #eee;
+}
+
+.logo{
+font-family:'Belleza', sans-serif;
+font-size:24px;
+}
+
+.logo span{
+color:#4e7d7a;
+}
+
+nav a{
+margin:0 15px;
+text-decoration:none;
+color:#444;
+font-family:'Belleza', sans-serif;
+}
+
+
+
+/* CENTER LOGIN */
+
+.login-container{
+height:calc(100vh - 70px);
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+
+
+/* LOGIN CARD */
+
+.form-box{
+width:360px;
+background:white;
+padding:40px;
+border-radius:10px;
+box-shadow:0 10px 30px rgba(0,0,0,0.08);
+}
+
+
+
+/* TYPOGRAPHY */
+
+.brand{
+font-family:'Belleza', sans-serif;
+font-size:22px;
+margin-bottom:10px;
+}
+
+.brand span{
+color:#4e7d7a;
+}
+
+h1{
+font-family:'Belleza', sans-serif;
+font-size:32px;
+margin-bottom:10px;
+}
+
+.subtitle{
+color:#555;
+margin-bottom:25px;
+}
+
+
+
+/* FORM */
+
+form{
+display:flex;
+flex-direction:column;
+}
+
+label{
+font-size:14px;
+margin-bottom:5px;
+}
+
+input{
+padding:12px;
+border-radius:6px;
+border:1px solid #ddd;
+margin-bottom:15px;
+font-family:'Alegreya', serif;
+}
+
+
+
+/* PASSWORD ROW */
+
+.password-row{
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.password-row a{
+font-size:13px;
+color:#4e7d7a;
+text-decoration:none;
+}
+
+
+
+/* SIGN IN BUTTON */
+
+.login-btn{
+background:#4e7d7a;
+color:white;
+border:none;
+padding:12px;
+border-radius:6px;
+font-family:'Belleza', sans-serif;
+cursor:pointer;
+}
+
+
+
+/* DIVIDER */
+
+.divider{
+display:flex;
+align-items:center;
+gap:10px;
+margin:25px 0;
+color:#777;
+font-size:14px;
+}
+
+.divider span{
+flex:1;
+height:1px;
+background:#ddd;
+}
+
+
+
+/* VAULT BUTTON */
+
+.vault-btn{
+width:100%;
+padding:12px;
+border:1px solid #2567a5;
+border-radius:6px;
+background:#000;
+cursor:pointer;
+display:flex;
+align-items:center;
+justify-content:center;
+gap:8px;
+}
+
+.vault-text{
+font-family:'Pacifico', cursive;
+font-size:18px;
+color:white;
+}
+
+.vault-icon{
+font-size:16px;
+}
+
+/* Continue with */
+
+.text{
+font-family:'Poppins', sans-serif;
+font-size:14px;
+color:white;
+}
+/* SIGNUP */
+
+.signup{
+margin-top:20px;
+text-align:center;
+font-size:14px;
+}
+
+.signup a{
+color:#4e7d7a;
+text-decoration:none;
+}

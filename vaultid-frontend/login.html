@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login — thinkED Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream: #f7f4ef;
+      --orange: #f05a28;
+      --orange-dark: #c94416;
+      --dark: #1a1714;
+      --dark-mid: #2e2a26;
+      --muted: #7a7168;
+      --border: #e2ddd6;
+      --card-bg: #ffffff;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      color: var(--dark);
+      overflow: hidden;
+    }
+
+    /* ─── background texture ─── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        radial-gradient(circle at 15% 20%, rgba(240,90,40,0.07) 0%, transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(240,90,40,0.05) 0%, transparent 40%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* subtle grain */
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.6;
+    }
+
+    /* ─── layout ─── */
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    /* ─── left panel ─── */
+    .panel-left {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 48px 52px;
+      border-right: 1px solid var(--border);
+      background: linear-gradient(160deg, #f2ede6 0%, #ede8e0 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel-left::before {
+      content: '';
+      position: absolute;
+      bottom: -60px; right: -60px;
+      width: 320px; height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(240,90,40,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .brand-icon {
+      width: 36px; height: 36px;
+      background: var(--orange);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand-icon svg { width: 20px; height: 20px; fill: #fff; }
+
+    .brand-name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+      color: var(--dark);
+    }
+
+    .brand-name span { color: var(--orange); }
+
+    .left-hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 40px 0;
+    }
+
+    .left-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 20px;
+    }
+
+    .left-eyebrow::before {
+      content: '';
+      display: block;
+      width: 20px; height: 1.5px;
+      background: var(--orange);
+      border-radius: 2px;
+    }
+
+    .left-headline {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 3vw, 2.7rem);
+      font-weight: 800;
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+      color: var(--dark);
+      margin-bottom: 18px;
+    }
+
+    .left-headline em {
+      font-style: normal;
+      color: var(--orange);
+    }
+
+    .left-sub {
+      font-size: 0.95rem;
+      line-height: 1.65;
+      color: var(--muted);
+      max-width: 320px;
+      font-weight: 300;
+    }
+
+    /* stat chips */
+    .stats {
+      display: flex;
+      gap: 12px;
+      margin-top: 40px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      background: rgba(255,255,255,0.6);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 18px;
+      backdrop-filter: blur(4px);
+    }
+
+    .stat-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--dark);
+      letter-spacing: -0.03em;
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 2px;
+      font-weight: 400;
+    }
+
+    .left-footer {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    /* ─── right panel ─── */
+    .panel-right {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 52px;
+      background: var(--cream);
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      animation: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-bottom: 36px;
+    }
+
+    .logo-lockup {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .logo-icon {
+      width: 44px; height: 44px;
+      background: var(--dark);
+      border-radius: 13px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .logo-icon svg { width: 24px; height: 24px; fill: #fff; }
+
+    .logo-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--dark);
+    }
+
+    .logo-text span { color: var(--orange); }
+
+    .card-tagline {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-weight: 300;
+      padding-left: 2px;
+    }
+
+    /* headings */
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--dark);
+      margin-bottom: 6px;
+    }
+
+    .card-subtitle {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-bottom: 32px;
+      font-weight: 300;
+      line-height: 1.5;
+    }
+
+    /* ─── VaultID button ─── */
+    .btn-vault {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 11px;
+      width: 100%;
+      padding: 15px 20px;
+      background: var(--dark);
+      color: #f7f4ef;
+      border: none;
+      border-radius: 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 14px rgba(26,23,20,0.18);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-vault::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .btn-vault:hover {
+      background: var(--dark-mid);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 22px rgba(26,23,20,0.22);
+    }
+
+    .btn-vault:active {
+      transform: translateY(0);
+      box-shadow: 0 3px 10px rgba(26,23,20,0.15);
+    }
+
+    .btn-vault .key-icon {
+      width: 20px; height: 20px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.12);
+      border-radius: 7px;
+      flex-shrink: 0;
+      padding: 3px;
+    }
+
+    .btn-vault .key-icon svg {
+      width: 14px; height: 14px;
+      fill: #f05a28;
+    }
+
+    .vault-badge {
+      margin-left: auto;
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(247,244,239,0.45);
+      font-weight: 400;
+    }
+
+    /* ─── divider ─── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 24px 0;
+    }
+
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .divider-text {
+      font-size: 0.78rem;
+      color: var(--muted);
+      white-space: nowrap;
+      font-weight: 400;
+    }
+
+    /* ─── email/password form ─── */
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--dark);
+      margin-bottom: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 13px 15px;
+      border: 1.5px solid var(--border);
+      border-radius: 11px;
+      background: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      color: var(--dark);
+      transition: border-color 0.18s, box-shadow 0.18s;
+      outline: none;
+    }
+
+    .field input::placeholder { color: #b5afa7; }
+
+    .field input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(240,90,40,0.12);
+    }
+
+    .field-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .field-row label { margin-bottom: 0; }
+
+    .forgot-link {
+      font-size: 0.78rem;
+      color: var(--orange);
+      text-decoration: none;
+      font-weight: 400;
+      transition: opacity 0.15s;
+    }
+    .forgot-link:hover { opacity: 0.7; }
+
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      border-radius: 11px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 14px rgba(240,90,40,0.28);
+    }
+
+    .btn-primary:hover {
+      background: var(--orange-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(240,90,40,0.32);
+    }
+
+    .btn-primary:active { transform: translateY(0); }
+
+    .signup-prompt {
+      text-align: center;
+      margin-top: 22px;
+      font-size: 0.83rem;
+      color: var(--muted);
+    }
+
+    .signup-prompt a {
+      color: var(--orange);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .signup-prompt a:hover { text-decoration: underline; }
+
+    /* ─── toast ─── */
+    .toast {
+      position: fixed;
+      bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: #2e2a26;
+      color: #f7f4ef;
+      padding: 13px 22px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 400;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 9999;
+      opacity: 0;
+      transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), opacity 0.4s;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast-dot {
+      width: 8px; height: 8px;
+      background: #f05a28;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ─── responsive ─── */
+    @media (max-width: 820px) {
+      html, body { overflow: auto; }
+      .page { grid-template-columns: 1fr; }
+      .panel-left { display: none; }
+      .panel-right { padding: 40px 24px; min-height: 100vh; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+  <!-- LEFT PANEL -->
+  <aside class="panel-left">
+    <a href="#" class="brand-mark">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <span class="brand-name">think<span>ED</span> Academy</span>
+    </a>
+
+    <div class="left-hero">
+      <span class="left-eyebrow">Your learning journey</span>
+      <h1 class="left-headline">
+        Skills that<br/>
+        <em>open doors.</em><br/>
+        Not just courses.
+      </h1>
+      <p class="left-sub">
+        Expert-led paths in cloud, cybersecurity, and engineering — built for people who mean business.
+      </p>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-num">12k+</div>
+          <div class="stat-label">Active learners</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">340+</div>
+          <div class="stat-label">Expert courses</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">97%</div>
+          <div class="stat-label">Completion rate</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="left-footer">© 2026 thinkED Academy. All rights reserved.</p>
+  </aside>
+
+  <!-- RIGHT PANEL -->
+  <main class="panel-right">
+    <div class="login-card">
+
+      <!-- Logo -->
+      <div class="card-logo">
+        <div class="logo-lockup">
+          <div class="logo-icon">
+            <!-- graduation cap icon -->
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <span class="logo-text">think<span>ED</span> Academy</span>
+        </div>
+        <span class="card-tagline">Your verified learning passport</span>
+      </div>
+
+      <h2 class="card-title">Welcome back</h2>
+      <p class="card-subtitle">Sign in to continue your learning journey.</p>
+
+      <!-- VaultID button -->
+      <a
+        href="#"
+        class="btn-vault"
+        id="vaultid-btn"
+        onclick="loginWithVaultID(event)"
+>
+  <span class="key-icon">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+    </svg>
+  </span>
+  Continue with VaultID
+  <span class="vault-badge">SSO</span>
+</a>
+
+      <!-- Divider -->
+      <div class="divider">
+        <div class="divider-line"></div>
+        <span class="divider-text">or continue with</span>
+        <div class="divider-line"></div>
+      </div>
+
+      <!-- Email / Password -->
+      <div class="field">
+        <label for="email">Email address</label>
+        <input type="email" id="email" placeholder="you@example.com" autocomplete="email"/>
+      </div>
+
+      <div class="field">
+        <div class="field-row">
+          <label for="password">Password</label>
+          <a href="#" class="forgot-link">Forgot password?</a>
+        </div>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password"/>
+      </div>
+
+      <button class="btn-primary" type="button">Sign in</button>
+
+      <p class="signup-prompt">
+        Don't have an account? <a href="#">Create one free</a>
+      </p>
+
+    </div>
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span class="toast-dot"></span>
+  <span id="toast-msg">Access denied — please try again</span>
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('error') === 'access_denied') {
+    showToast('Access denied — please try again');
+    history.replaceState({}, '', window.location.pathname);
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 4000);
+  }
+
+  function loginWithVaultID(e) {
+    e.preventDefault();
+    // Get VaultID token from storage
+    const token = sessionStorage.getItem('vaultid_token')
+                || localStorage.getItem('vaultid_token')
+                || '';
+
+    const base = 'http://127.0.0.1:8000/oauth/authorize';
+    const qs   = new URLSearchParams({
+      response_type: 'code',
+      client_id:     'thinked_client',
+      redirect_uri:  'http://localhost:5500/callback.html',
+      scope:         'profile email',
+      state:         'abc123',
+    });
+
+    // Append vault_token if available so backend knows who is authorizing
+    if (token) qs.set('vault_token', token);
+
+    window.location.href = `${base}?${qs.toString()}`;
+  }
+</script>
+</body>
+</html>

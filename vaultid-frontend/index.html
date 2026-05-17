@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>thinkED Academy — Find the right course for you</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --cream: #f7f4ef;
+    --black: #151310;
+    --orange: #f05a28;
+    --violet: #8b5cf6;
+    --violet-light: #ede9fe;
+    --yellow: #fbbf24;
+    --yellow-light: #fef9c3;
+    --white: #ffffff;
+    --gray: #6b7280;
+    --card-border: #e5e0d8;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--black);
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(247,244,239,0.85);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--card-border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 5%;
+    height: 68px;
+  }
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.45rem; font-weight: 800;
+    text-decoration: none; color: var(--black);
+    letter-spacing: -0.5px;
+  }
+  .nav-logo span { color: var(--orange); }
+  .nav-links { display: flex; gap: 2.4rem; list-style: none; align-items: center; }
+  .nav-links a {
+    text-decoration: none; color: var(--black);
+    font-size: 0.95rem; font-weight: 500;
+    position: relative; transition: color 0.2s;
+  }
+  .nav-links a::after {
+    content: ''; position: absolute; bottom: -3px; left: 0;
+    width: 0; height: 2px; background: var(--orange);
+    transition: width 0.2s;
+  }
+  .nav-links a:hover { color: var(--orange); }
+  .nav-links a:hover::after { width: 100%; }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+
+  #user-info {
+    display: none; align-items: center; gap: 0.7rem;
+  }
+  .vault-badge {
+    background: var(--violet); color: #fff;
+    font-size: 0.7rem; font-weight: 700;
+    padding: 2px 8px; border-radius: 20px;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .user-name {
+    font-weight: 600; font-size: 0.92rem;
+  }
+
+  .btn-signin {
+    background: var(--orange); color: #fff;
+    border: none; cursor: pointer;
+    padding: 0.52rem 1.4rem;
+    border-radius: 40px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.92rem; font-weight: 600;
+    transition: background 0.2s, transform 0.15s;
+    text-decoration: none;
+  }
+  .btn-signin:hover { background: #d14820; transform: translateY(-1px); }
+
+  .btn-signout {
+    background: transparent; color: var(--gray);
+    border: 1.5px solid var(--card-border); cursor: pointer;
+    padding: 0.48rem 1.1rem; border-radius: 40px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem; font-weight: 500;
+    transition: all 0.2s;
+  }
+  .btn-signout:hover { border-color: var(--orange); color: var(--orange); }
+
+  /* ── HERO ── */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    padding: 5rem 5% 4rem;
+    gap: 3rem;
+    position: relative;
+    overflow: hidden;
+    min-height: calc(100vh - 68px);
+  }
+
+  /* decorative circles */
+  .hero::before {
+    content: '';
+    position: absolute;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%);
+    top: -80px; right: 10%;
+    border-radius: 50%; pointer-events: none;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(240,90,40,0.09) 0%, transparent 70%);
+    bottom: 0; left: 5%;
+    border-radius: 50%; pointer-events: none;
+  }
+
+  .hero-left { z-index: 1; }
+
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--violet-light); color: var(--violet);
+    font-size: 0.8rem; font-weight: 600;
+    padding: 0.3rem 0.9rem; border-radius: 20px;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.3px;
+  }
+  .hero-tag span { font-size: 1rem; }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.8rem, 5vw, 4.2rem);
+    font-weight: 800; line-height: 1.1;
+    letter-spacing: -2px;
+    margin-bottom: 1.2rem;
+  }
+  .hero h1 .accent { color: var(--orange); }
+
+  .hero-sub {
+    font-size: 1.05rem; color: var(--gray);
+    line-height: 1.65; max-width: 440px;
+    margin-bottom: 2.2rem;
+    font-weight: 300;
+  }
+
+  .hero-cta { display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap; }
+
+  .btn-primary {
+    background: var(--orange); color: #fff;
+    padding: 0.78rem 1.9rem; border-radius: 40px;
+    text-decoration: none; font-weight: 600; font-size: 0.97rem;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 20px rgba(240,90,40,0.25);
+  }
+  .btn-primary:hover { background: #d14820; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(240,90,40,0.35); }
+
+  .btn-ghost {
+    color: var(--black); text-decoration: none;
+    font-weight: 500; font-size: 0.97rem;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    transition: color 0.2s;
+  }
+  .btn-ghost:hover { color: var(--orange); }
+  .btn-ghost .arrow { transition: transform 0.2s; }
+  .btn-ghost:hover .arrow { transform: translate(3px,-3px); }
+
+  /* teacher avatars */
+  .certified-row {
+    margin-top: 3rem;
+    display: flex; align-items: center; gap: 0.9rem;
+  }
+  .avatar-stack { display: flex; }
+  .avatar-stack img,
+  .avatar-stack .av {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 2.5px solid var(--cream);
+    margin-left: -10px; object-fit: cover;
+    background: #ccc;
+  }
+  .avatar-stack .av:first-child { margin-left: 0; }
+  .av-more {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--yellow); border: 2.5px solid var(--cream);
+    margin-left: -10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 700; color: var(--black);
+  }
+  .certified-text { font-size: 0.82rem; color: var(--gray); line-height: 1.4; }
+  .certified-text strong { display: block; color: var(--black); font-weight: 600; }
+
+  /* hero right illustration */
+  .hero-right {
+    position: relative; z-index: 1;
+    display: flex; justify-content: center; align-items: center;
+  }
+  .hero-illustration {
+    width: 100%; max-width: 520px;
+    animation: float 5s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+  }
+
+  /* stat cards */
+  .stat-cards {
+    display: flex; gap: 1rem;
+    margin-top: 3rem;
+    flex-wrap: wrap;
+  }
+  .stat-card {
+    background: var(--white);
+    border: 1.5px solid var(--card-border);
+    border-radius: 18px;
+    padding: 1rem 1.4rem;
+    min-width: 120px;
+    animation: fadeUp 0.6s ease both;
+  }
+  .stat-card:nth-child(2) { background: var(--violet); border-color: var(--violet); animation-delay: 0.1s; }
+  .stat-card:nth-child(3) { background: var(--yellow); border-color: var(--yellow); animation-delay: 0.2s; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .stat-tag {
+    font-size: 0.7rem; font-weight: 600;
+    background: var(--violet-light); color: var(--violet);
+    padding: 2px 8px; border-radius: 20px;
+    display: inline-block; margin-bottom: 0.4rem;
+  }
+  .stat-card:nth-child(2) .stat-tag { background: rgba(255,255,255,0.2); color: #fff; }
+  .stat-card:nth-child(3) .stat-tag { background: rgba(0,0,0,0.08); color: var(--black); }
+
+  .stat-label { font-size: 0.78rem; color: var(--gray); margin-bottom: 0.1rem; }
+  .stat-card:nth-child(2) .stat-label,
+  .stat-card:nth-child(2) .stat-num { color: rgba(255,255,255,0.9); }
+  .stat-card:nth-child(3) .stat-label,
+  .stat-card:nth-child(3) .stat-num { color: var(--black); }
+
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem; font-weight: 800;
+    color: var(--black);
+    letter-spacing: -1px;
+  }
+
+  /* ── COURSES ── */
+  .section {
+    padding: 5rem 5%;
+  }
+  .section-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem;
+  }
+  .section-eyebrow {
+    font-size: 0.78rem; font-weight: 700;
+    color: var(--orange); letter-spacing: 1.5px;
+    text-transform: uppercase; margin-bottom: 0.5rem;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.8rem, 3vw, 2.5rem);
+    font-weight: 800; letter-spacing: -1px;
+  }
+  .section-title .accent { color: var(--orange); }
+  .view-all {
+    color: var(--orange); text-decoration: none;
+    font-weight: 600; font-size: 0.9rem;
+    display: flex; align-items: center; gap: 0.3rem;
+    white-space: nowrap;
+    transition: gap 0.2s;
+  }
+  .view-all:hover { gap: 0.6rem; }
+
+  /* filter pills */
+  .filter-pills {
+    display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 2rem;
+  }
+  .pill {
+    padding: 0.4rem 1.1rem; border-radius: 30px;
+    border: 1.5px solid var(--card-border);
+    background: transparent; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem; font-weight: 500; color: var(--gray);
+    transition: all 0.2s;
+  }
+  .pill.active, .pill:hover {
+    background: var(--black); color: #fff; border-color: var(--black);
+  }
+
+  /* course grid */
+  .courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 1.4rem;
+  }
+
+  .course-card {
+    background: var(--white);
+    border: 1.5px solid var(--card-border);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: transform 0.25s, box-shadow 0.25s;
+    cursor: pointer;
+    animation: fadeUp 0.5s ease both;
+  }
+  .course-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.1);
+  }
+  .course-thumb {
+    height: 160px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3.5rem;
+    position: relative; overflow: hidden;
+  }
+  .course-thumb .thumb-bg {
+    position: absolute; inset: 0; opacity: 0.15;
+  }
+  .course-body { padding: 1.2rem 1.3rem 1.4rem; }
+  .course-category {
+    font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 0.5rem;
+  }
+  .course-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.05rem; font-weight: 700;
+    line-height: 1.35; margin-bottom: 0.7rem;
+  }
+  .course-meta {
+    display: flex; align-items: center; gap: 0.8rem;
+    font-size: 0.8rem; color: var(--gray); margin-bottom: 1rem;
+  }
+  .course-meta span { display: flex; align-items: center; gap: 0.25rem; }
+  .stars { color: var(--yellow); font-size: 0.75rem; }
+  .course-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid var(--card-border); padding-top: 0.9rem;
+  }
+  .course-price {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.15rem; font-weight: 800;
+  }
+  .course-price .free { color: var(--orange); }
+  .enroll-btn {
+    background: var(--black); color: #fff;
+    border: none; cursor: pointer;
+    padding: 0.42rem 1rem; border-radius: 30px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem; font-weight: 600;
+    transition: background 0.2s;
+  }
+  .enroll-btn:hover { background: var(--orange); }
+
+  /* AI Banner */
+  .ai-banner {
+    margin: 0 5% 5rem;
+    background: var(--black);
+    border-radius: 28px;
+    padding: 3.5rem 5%;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 2rem; flex-wrap: wrap;
+    position: relative; overflow: hidden;
+  }
+  .ai-banner::before {
+    content: '';
+    position: absolute; top: -60px; right: 80px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(139,92,246,0.4) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .ai-banner-left { z-index: 1; }
+  .ai-tag {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    background: rgba(139,92,246,0.25); color: #c4b5fd;
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; padding: 0.3rem 0.9rem;
+    border-radius: 20px; margin-bottom: 1rem;
+  }
+  .ai-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 800; color: #fff;
+    line-height: 1.2; letter-spacing: -1px;
+    margin-bottom: 0.8rem;
+  }
+  .ai-title span { color: var(--violet); }
+  .ai-sub { color: rgba(255,255,255,0.6); font-size: 0.95rem; line-height: 1.6; max-width: 450px; }
+  .ai-cta {
+    background: var(--violet); color: #fff;
+    padding: 0.82rem 2rem; border-radius: 40px;
+    text-decoration: none; font-weight: 600; font-size: 0.97rem;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    transition: background 0.2s, transform 0.15s;
+    box-shadow: 0 4px 24px rgba(139,92,246,0.4);
+    white-space: nowrap; z-index: 1;
+  }
+  .ai-cta:hover { background: #7c3aed; transform: translateY(-2px); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--black); color: rgba(255,255,255,0.7);
+    padding: 4rem 5% 2rem;
+  }
+  .footer-top {
+    display: grid;
+    grid-template-columns: 1.8fr 1fr 1fr 1fr;
+    gap: 3rem; margin-bottom: 3rem;
+  }
+  .footer-brand .nav-logo { color: #fff; margin-bottom: 0.9rem; display: block; }
+  .footer-brand p { font-size: 0.87rem; line-height: 1.7; max-width: 280px; }
+  .footer-col h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem; font-weight: 700;
+    color: #fff; margin-bottom: 1rem;
+    letter-spacing: 0.3px;
+  }
+  .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 0.55rem; }
+  .footer-col a {
+    color: rgba(255,255,255,0.55); text-decoration: none;
+    font-size: 0.87rem; transition: color 0.2s;
+  }
+  .footer-col a:hover { color: var(--orange); }
+  .footer-bottom {
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 1.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 1rem;
+  }
+  .footer-bottom p { font-size: 0.82rem; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; min-height: auto; padding: 3rem 5%; }
+    .hero-right { order: -1; }
+    .hero-illustration { max-width: 320px; }
+    .footer-top { grid-template-columns: 1fr 1fr; }
+    .ai-banner { text-align: center; justify-content: center; }
+  }
+  @media (max-width: 600px) {
+    .nav-links { display: none; }
+    .footer-top { grid-template-columns: 1fr; gap: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">think<span>ED</span> Academy</a>
+  <ul class="nav-links">
+    <li><a href="#courses">Courses</a></li>
+    <li><a href="#ai-recommendations">AI Recommendations</a></li>
+    <li><a href="#subjects">Subjects</a></li>
+    <li><a href="#degrees">Degrees</a></li>
+  </ul>
+  <div class="nav-right">
+    <div id="user-info">
+      <div id="nav-avatar" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f05a28,#8b5cf6);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0" id="nav-avatar">?</div>
+      <span class="user-name" id="nav-username"></span>
+      <span class="vault-badge">VaultID</span>
+      <button class="btn-signout" onclick="signOut()">Sign Out</button>
+    </div>
+    <a href="login.html" class="btn-signin" id="signin-btn">Sign In</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-tag"><span>✦</span> Personalised Learning</div>
+    <h1>Find the right<br><span class="accent">course</span> for you</h1>
+    <p class="hero-sub">See your personalised recommendations based on your interests and goals. Learn from certified teachers, anywhere.</p>
+    <div class="hero-cta">
+      <a href="#courses" class="btn-primary">Find a course →</a>
+      <a href="#ai-recommendations" class="btn-ghost">View AI Picks <span class="arrow">↗</span></a>
+    </div>
+    <div class="certified-row">
+      <div class="avatar-stack">
+        <div class="av" style="background: linear-gradient(135deg,#fbbf24,#f97316);"></div>
+        <div class="av" style="background: linear-gradient(135deg,#8b5cf6,#ec4899);"></div>
+        <div class="av" style="background: linear-gradient(135deg,#06b6d4,#10b981);"></div>
+        <div class="av" style="background: linear-gradient(135deg,#f43f5e,#fb923c);"></div>
+        <div class="av-more">135+</div>
+      </div>
+      <div class="certified-text">
+        <strong>Certified teachers only</strong>
+        Expert instructors, vetted for you
+      </div>
+    </div>
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="stat-tag">Education</div>
+        <div class="stat-label">subjects</div>
+        <div class="stat-num">+40</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-tag">Online</div>
+        <div class="stat-label">courses</div>
+        <div class="stat-num">+120</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-tag">★★★★★ 5.0</div>
+        <div class="stat-label">learner reviews</div>
+        <div class="stat-num">+180k</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SVG Illustration (girl on pencil) -->
+  <div class="hero-right">
+    <svg class="hero-illustration" viewBox="0 0 520 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- pencil body -->
+      <rect x="60" y="280" width="380" height="60" rx="12" fill="#8b5cf6" transform="rotate(-15 60 280)"/>
+      <polygon points="60,280 0,320 60,340" fill="#fbbf24"/>
+      <rect x="400" y="260" width="40" height="65" rx="4" fill="#f9e4b7" transform="rotate(-15 400 260)"/>
+      <!-- body -->
+      <ellipse cx="280" cy="200" rx="55" ry="70" fill="#f9f0e0" stroke="#151310" stroke-width="3"/>
+      <!-- head -->
+      <circle cx="270" cy="120" r="52" fill="#f9d9b0" stroke="#151310" stroke-width="3"/>
+      <!-- hair -->
+      <path d="M218 115 Q230 60 270 65 Q310 60 320 115 Q300 100 270 105 Q240 100 218 115Z" fill="#151310"/>
+      <path d="M320 115 Q335 160 330 195 Q315 185 310 170 Q315 145 320 115Z" fill="#151310"/>
+      <!-- face -->
+      <circle cx="255" cy="118" r="4" fill="#151310"/>
+      <circle cx="285" cy="118" r="4" fill="#151310"/>
+      <path d="M258 135 Q270 148 282 135" stroke="#151310" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <!-- earring -->
+      <circle cx="218" cy="125" r="5" fill="#fbbf24" stroke="#151310" stroke-width="2"/>
+      <!-- arms -->
+      <path d="M230 200 Q190 230 185 265" stroke="#f9d9b0" stroke-width="18" stroke-linecap="round"/>
+      <path d="M310 205 Q350 235 365 260" stroke="#f9d9b0" stroke-width="18" stroke-linecap="round"/>
+      <!-- hands pointing -->
+      <ellipse cx="178" cy="272" rx="18" ry="12" fill="#f9d9b0" stroke="#151310" stroke-width="2" transform="rotate(-20 178 272)"/>
+      <ellipse cx="372" cy="267" rx="18" ry="12" fill="#f9d9b0" stroke="#151310" stroke-width="2" transform="rotate(20 372 267)"/>
+      <!-- shirt -->
+      <path d="M230 200 Q270 230 310 205 Q325 260 310 290 Q270 310 230 290 Q215 260 230 200Z" fill="#fff" stroke="#151310" stroke-width="2.5"/>
+      <!-- legs -->
+      <path d="M250 290 Q240 340 250 380" stroke="#151310" stroke-width="16" stroke-linecap="round"/>
+      <path d="M290 290 Q300 340 295 380" stroke="#151310" stroke-width="16" stroke-linecap="round"/>
+      <!-- shoes -->
+      <ellipse cx="252" cy="385" rx="20" ry="10" fill="#151310"/>
+      <ellipse cx="294" cy="385" rx="20" ry="10" fill="#151310"/>
+      <!-- stars -->
+      <text x="150" y="140" font-size="28" fill="#fbbf24">★</text>
+      <text x="390" y="180" font-size="20" fill="#fbbf24">★</text>
+      <text x="390" y="380" font-size="14" fill="#fbbf24">✦</text>
+      <!-- cloud -->
+      <ellipse cx="430" cy="320" rx="36" ry="18" fill="white" stroke="#151310" stroke-width="2.5"/>
+      <ellipse cx="415" cy="314" rx="22" ry="16" fill="white" stroke="#151310" stroke-width="2"/>
+      <ellipse cx="448" cy="314" rx="18" ry="14" fill="white" stroke="#151310" stroke-width="2"/>
+    </svg>
+  </div>
+</section>
+
+<!-- COURSES SECTION -->
+<section class="section" id="courses">
+  <div class="section-header">
+    <div>
+      <div class="section-eyebrow">What we offer</div>
+      <h2 class="section-title">Take your <span class="accent">knowledge</span><br>a degree further</h2>
+    </div>
+    <a href="#" class="view-all">View all courses →</a>
+  </div>
+
+  <div class="filter-pills">
+    <button class="pill active">All</button>
+    <button class="pill">New courses (12)</button>
+    <button class="pill">Recommended (8)</button>
+    <button class="pill">Most popular (22)</button>
+  </div>
+
+  <div class="courses-grid">
+    <!-- Card 1 -->
+    <div class="course-card" style="animation-delay:0s">
+      <div class="course-thumb" style="background: linear-gradient(135deg,#ede9fe,#ddd6fe);">
+        <div class="thumb-bg" style="background: radial-gradient(circle,#8b5cf6,transparent);"></div>
+        <span>✏️</span>
+      </div>
+      <div class="course-body">
+        <div class="course-category" style="color:#8b5cf6">Marketing</div>
+        <div class="course-title">Creative Writing for Beginners</div>
+        <div class="course-meta">
+          <span><span class="stars">★★★★★</span> 4.9</span>
+          <span>📖 24 lessons</span>
+          <span>⏱ 8h</span>
+        </div>
+        <div class="course-footer">
+          <div class="course-price"><span class="free">Free</span></div>
+          <button class="enroll-btn">Enroll now</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="course-card" style="animation-delay:0.08s">
+      <div class="course-thumb" style="background: linear-gradient(135deg,#fef9c3,#fde68a);">
+        <span>🎤</span>
+      </div>
+      <div class="course-body">
+        <div class="course-category" style="color:#d97706">Psychology</div>
+        <div class="course-title">Public Speaking and Leadership</div>
+        <div class="course-meta">
+          <span><span class="stars">★★★★★</span> 4.8</span>
+          <span>📖 18 lessons</span>
+          <span>⏱ 6h</span>
+        </div>
+        <div class="course-footer">
+          <div class="course-price">₹1,299</div>
+          <button class="enroll-btn">Enroll now</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="course-card" style="animation-delay:0.16s">
+      <div class="course-thumb" style="background: linear-gradient(135deg,#d1fae5,#a7f3d0);">
+        <span>📊</span>
+      </div>
+      <div class="course-body">
+        <div class="course-category" style="color:#059669">Computer Science</div>
+        <div class="course-title">Data Visualization Techniques</div>
+        <div class="course-meta">
+          <span><span class="stars">★★★★★</span> 4.9</span>
+          <span>📖 32 lessons</span>
+          <span>⏱ 12h</span>
+        </div>
+        <div class="course-footer">
+          <div class="course-price">₹1,999</div>
+          <button class="enroll-btn">Enroll now</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4 -->
+    <div class="course-card" style="animation-delay:0.24s">
+      <div class="course-thumb" style="background: linear-gradient(135deg,#fce7f3,#fbcfe8);">
+        <span>🎨</span>
+      </div>
+      <div class="course-body">
+        <div class="course-category" style="color:#db2777">Computer Science</div>
+        <div class="course-title">Digital Illustration with Adobe Illustrator</div>
+        <div class="course-meta">
+          <span><span class="stars">★★★★☆</span> 4.6</span>
+          <span>📖 40 lessons</span>
+          <span>⏱ 16h</span>
+        </div>
+        <div class="course-footer">
+          <div class="course-price">₹2,499</div>
+          <button class="enroll-btn">Enroll now</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 5 -->
+    <div class="course-card" style="animation-delay:0.32s">
+      <div class="course-thumb" style="background: linear-gradient(135deg,#fee2e2,#fecaca);">
+        <span>🧠</span>
+      </div>
+      <div class="course-body">
+        <div class="course-category" style="color:#dc2626">Psychology & Mental Health</div>
+        <div class="course-title">Foundations of Mindfulness & Wellbeing</div>
+        <div class="course-meta">
+          <span><span class="stars">★★★★★</span> 5.0</span>
+          <span>📖 20 lessons</span>
+          <span>⏱ 7h</span>
+        </div>
+        <div class="course-footer">
+          <div class="course-price"><span class="free">Free</span></div>
+          <button class="enroll-btn">Enroll now</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 6 -->
+    <div class="course-card" style="animation-delay:0.4s">
+      <div class="course-thumb" style="background: linear-gradient(135deg,#e0f2fe,#bae6fd);">
+        <span>💻</span>
+      </div>
+      <div class="course-body">
+        <div class="course-category" style="color:#0284c7">IT & Computer Science</div>
+        <div class="course-title">Full-Stack Web Development Bootcamp</div>
+        <div class="course-meta">
+          <span><span class="stars">★★★★★</span> 4.9</span>
+          <span>📖 60 lessons</span>
+          <span>⏱ 30h</span>
+        </div>
+        <div class="course-footer">
+          <div class="course-price">₹3,999</div>
+          <button class="enroll-btn">Enroll now</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AI RECOMMENDATIONS BANNER -->
+<div class="ai-banner" id="ai-recommendations">
+  <div class="ai-banner-left">
+    <div class="ai-tag">✦ AI-Powered</div>
+    <div class="ai-title">Upgrade your skills<br>with <span>AI Recommendations</span></div>
+    <p class="ai-sub">Our AI analyses your learning history, interests, and career goals to surface the perfect next course — so you never feel lost again.</p>
+  </div>
+  <a href="login.html" class="ai-cta">Get my recommendations ✦</a>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <a href="index.html" class="nav-logo">think<span style="color:var(--orange)">ED</span> Academy</a>
+      <p>Your personalised learning platform. Discover world-class courses tailored to your ambitions.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Platform</h4>
+      <ul>
+        <li><a href="#">Courses</a></li>
+        <li><a href="#">Degrees</a></li>
+        <li><a href="#">Subjects</a></li>
+        <li><a href="#">AI Picks</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="#">About Us</a></li>
+        <li><a href="#">Blog</a></li>
+        <li><a href="#">Careers</a></li>
+        <li><a href="#">Press</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Support</h4>
+      <ul>
+        <li><a href="#">Help Centre</a></li>
+        <li><a href="#">Privacy Policy</a></li>
+        <li><a href="#">Terms of Use</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 thinkED Academy. All rights reserved.</p>
+    <p>Made with ♥ for curious minds</p>
+  </div>
+</footer>
+
+<script>
+  // Auth check below ──
+
+  // Check session auth
+  (async function() {
+    // Always check token validity with backend first
+    const storedTk = localStorage.getItem('thinked_access_token');
+    
+    if (storedTk) {
+      try {
+        const check = await fetch('http://127.0.0.1:8000/oauth/token/status?token=' + storedTk);
+        const data = await check.json();
+        if (!data.valid) {
+          // Token revoked or expired — clear everything
+          sessionStorage.clear();
+          ['thinked_token','thinked_access_token','thinked_authed',
+           'thinked_user','thinked_expires_at','thinked_issued_at',
+           'thinked_expires_in'].forEach(k => localStorage.removeItem(k));
+          // Show hero with sign in button
+          document.getElementById('signin-btn').style.display = 'flex';
+          const ui = document.getElementById('user-info');
+          if (ui) ui.style.display = 'none';
+          return;
+        }
+      } catch(e) {
+        // Backend unreachable
+      }
+    }
+
+    // No token at all — show hero
+    if (!storedTk) {
+      sessionStorage.clear();
+      document.getElementById('signin-btn').style.display = 'flex';
+      const ui = document.getElementById('user-info');
+      if (ui) ui.style.display = 'none';
+      return;
+    }
+
+    // Token valid — show user info
+    const userRaw = localStorage.getItem('thinked_user') || sessionStorage.getItem('thinked_user');
+    if (!userRaw) {
+      document.getElementById('signin-btn').style.display = 'flex';
+      return;
+    }
+    if (userRaw) {
+      try {
+        const user = JSON.parse(userRaw);
+        document.getElementById('signin-btn').style.display = 'none';
+        const ui = document.getElementById('user-info');
+        ui.style.display = 'flex';
+        const name = user.name || user.email || 'Learner';
+        document.getElementById('nav-username').textContent = name;
+        // Set avatar initials
+        const avatar = document.getElementById('nav-avatar');
+        if (avatar) avatar.textContent = name.charAt(0).toUpperCase();
+      } catch(e) {}
+    }
+  })();
+
+  function signOut() {
+    sessionStorage.removeItem('thinked_authed');
+    sessionStorage.removeItem('thinked_user');
+    localStorage.removeItem('thinked_access_token');
+    localStorage.removeItem('thinked_user');
+    localStorage.removeItem('thinked_expires_at');
+    localStorage.removeItem('thinked_issued_at');
+    localStorage.removeItem('thinked_expires_in');
+    window.location.href = 'login.html';
+  }
+
+  // Filter pills interaction
+  document.querySelectorAll('.pill').forEach(p => {
+    p.addEventListener('click', () => {
+      document.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+      p.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>

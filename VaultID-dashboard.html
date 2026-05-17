@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VaultID — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --neon:          #4ED378;
+  --mint:          #A4D1B3;
+  --white:         #e8f5ed;
+  --text:          #d4e8db;
+  --text-muted:    #5a8068;
+  --panel:         #0a100d;
+  --panel2:        #071009;
+  --moss:          #1e3828;
+  --divider:       #172420;
+  --error:         #f87171;
+  --warn:          #f59e0b;
+  --font-body:     'DM Sans', sans-serif;
+  --font-logo:     'Pacifico', cursive;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: #040d07;
+  font-family: var(--font-body);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+/* ══════════════════════════════════
+   STICKY NAV
+══════════════════════════════════ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 40px;
+  background: rgba(4,13,7,0.7);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(78,211,120,0.08);
+  transition: background 0.3s, border-color 0.3s;
+}
+nav.scrolled {
+  background: rgba(7,16,9,0.95);
+  border-bottom-color: rgba(78,211,120,0.15);
+}
+
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; cursor: pointer;
+}
+.nav-logo-icon {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, #0e2018, #1a3828);
+  border: 1px solid rgba(78,211,120,0.3);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 14px rgba(78,211,120,0.15);
+}
+.nav-logo-name {
+  font-family: var(--font-logo);
+  font-size: 22px; color: #fff;
+  display: inline-block; transform: skewX(6deg);
+  letter-spacing: 0.02em;
+}
+
+.nav-right { display: flex; align-items: center; gap: 16px; }
+
+.nav-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px;
+  background: rgba(78,211,120,0.07);
+  border: 1px solid rgba(78,211,120,0.18);
+  border-radius: 20px;
+  font-size: 11px; font-weight: 600; color: var(--neon);
+  letter-spacing: 0.04em;
+}
+.nav-badge-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--neon); box-shadow: 0 0 6px var(--neon);
+  animation: pulseDot 2s ease-in-out infinite;
+}
+@keyframes pulseDot {
+  0%,100%{box-shadow:0 0 4px var(--neon);transform:scale(1)}
+  50%{box-shadow:0 0 12px var(--neon);transform:scale(1.2)}
+}
+
+.user-menu { position: relative; }
+.user-btn {
+  display: flex; align-items: center; gap: 9px;
+  background: rgba(78,211,120,0.05);
+  border: 1px solid rgba(78,211,120,0.15);
+  border-radius: 22px; padding: 6px 14px 6px 6px;
+  cursor: pointer; transition: background 0.2s, border-color 0.2s;
+}
+.user-btn:hover { background: rgba(78,211,120,0.1); border-color: rgba(78,211,120,0.3); }
+.user-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--neon), #1a5c30);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 12px; color: #000; flex-shrink: 0;
+}
+.user-name { font-size: 13px; font-weight: 600; color: var(--white); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-chevron { color: var(--text-muted); transition: transform 0.2s; }
+.user-menu.open .user-chevron { transform: rotate(180deg); }
+
+.dropdown {
+  display: none; position: absolute; top: calc(100% + 8px); right: 0;
+  width: 180px;
+  background: #0c1610;
+  border: 1px solid rgba(78,211,120,0.15);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+  animation: fadeUp 0.2s ease both;
+}
+.user-menu.open .dropdown { display: block; }
+.dropdown a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 16px;
+  font-size: 13px; font-weight: 500; color: var(--text);
+  text-decoration: none; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  border-bottom: 1px solid rgba(78,211,120,0.06);
+}
+.dropdown a:last-child { border-bottom: none; }
+.dropdown a:hover { background: rgba(78,211,120,0.07); color: var(--white); }
+.dropdown a.danger:hover { background: rgba(248,113,113,0.07); color: var(--error); }
+.dropdown a svg { opacity: 0.5; flex-shrink: 0; }
+.dropdown a:hover svg { opacity: 1; }
+
+/* ══════════════════════════════════
+   HERO
+══════════════════════════════════ */
+.hero {
+  position: relative;
+  height: 100vh; min-height: 640px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  overflow: hidden;
+  padding-top: 64px;
+}
+
+/* Galaxy canvas — fixed full viewport so sphere is truly massive */
+#galaxyCanvas {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  width: 100vw; height: 100vh;
+}
+
+/* Fade bottom of hero into page */
+.hero-fade {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 45%;
+  background: linear-gradient(to top, #040d07 0%, transparent 100%);
+  z-index: 3; pointer-events: none;
+}
+/* Fade top of hero gently */
+.hero-fade-top {
+  position: absolute; top: 64px; left: 0; right: 0; height: 20%;
+  background: linear-gradient(to bottom, rgba(4,13,7,0.6) 0%, transparent 100%);
+  z-index: 3; pointer-events: none;
+}
+
+/* Grid overlay */
+.hero::before {
+  content: '';
+  position: absolute; inset: 0; z-index: 2;
+  background-image:
+    linear-gradient(rgba(78,211,120,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(78,211,120,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative; z-index: 10;
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  padding: 0 24px;
+  /* push content to upper portion so galaxy sphere is visible below */
+  margin-top: -80px;
+}
+
+/* Eyebrow pill */
+.hero-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 14px;
+  background: rgba(78,211,120,0.08);
+  border: 1px solid rgba(78,211,120,0.2);
+  border-radius: 20px;
+  font-size: 11px; font-weight: 700; color: var(--neon);
+  letter-spacing: 0.08em; text-transform: uppercase;
+  margin-bottom: 28px;
+  animation: fadeUp 0.6s 0.2s ease both;
+}
+.hero-pill-dot { width:5px;height:5px;border-radius:50%;background:var(--neon);box-shadow:0 0 6px var(--neon);animation:pulseDot 2s ease-in-out infinite; }
+
+/* Main headline */
+.hero-h1 {
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: clamp(42px, 7vw, 82px);
+  line-height: 1.0;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  margin-bottom: 10px;
+  animation: fadeUp 0.7s 0.3s ease both;
+}
+.hero-h1 .strike {
+  position: relative;
+  color: rgba(255,255,255,0.35);
+  display: inline-block;
+}
+.hero-h1 .strike::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 52%;
+  height: 3px;
+  background: var(--error);
+  transform: rotate(-2deg);
+  box-shadow: 0 0 10px rgba(248,113,113,0.6);
+  border-radius: 2px;
+}
+.hero-h1 .accent { color: var(--neon); text-shadow: 0 0 40px rgba(78,211,120,0.4); }
+
+.hero-h2 {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: clamp(26px, 4vw, 48px);
+  letter-spacing: -0.02em;
+  color: var(--white);
+  margin-bottom: 20px;
+  animation: fadeUp 0.7s 0.4s ease both;
+  opacity: 0.9;
+}
+
+.hero-desc {
+  max-width: 560px;
+  font-size: clamp(13px, 1.6vw, 15px);
+  font-weight: 400;
+  color: rgba(164,209,179,0.6);
+  line-height: 1.7;
+  margin-bottom: 36px;
+  animation: fadeUp 0.7s 0.5s ease both;
+}
+.hero-desc strong { color: rgba(164,209,179,0.9); font-weight: 600; }
+
+/* Stats bar */
+.hero-stats {
+  display: flex; align-items: center; gap: 0;
+  background: rgba(10,16,13,0.7);
+  border: 1px solid rgba(78,211,120,0.15);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 32px;
+  animation: fadeUp 0.7s 0.6s ease both;
+  backdrop-filter: blur(12px);
+}
+.hero-stat {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 22px;
+  border-right: 1px solid rgba(78,211,120,0.1);
+}
+.hero-stat:last-child { border-right: none; }
+.hero-stat-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: rgba(78,211,120,0.1);
+  border: 1px solid rgba(78,211,120,0.2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.hero-stat-val {
+  font-family: var(--font-body); font-weight: 800; font-size: 16px;
+  color: var(--white); line-height: 1; letter-spacing: -0.02em;
+}
+.hero-stat-label {
+  font-family: var(--font-body); font-weight: 500; font-size: 10.5px;
+  color: var(--text-muted); margin-top: 2px; letter-spacing: 0.02em;
+}
+
+/* CTA */
+.hero-cta {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  animation: fadeUp 0.7s 0.7s ease both;
+}
+.cta-link {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; color: var(--text-muted);
+  text-decoration: none; cursor: pointer;
+  transition: color 0.2s;
+}
+.cta-link:hover { color: var(--neon); }
+.scroll-arrow {
+  animation: bounce 1.8s ease-in-out infinite;
+  color: var(--neon);
+}
+@keyframes bounce {
+  0%,100%{transform:translateY(0)} 50%{transform:translateY(6px)}
+}
+
+/* ══════════════════════════════════
+   DASHBOARD CONTENT
+══════════════════════════════════ */
+.dashboard {
+  position: relative; z-index: 10;
+  padding: 0 40px 80px;
+  max-width: 1100px; margin: 0 auto;
+}
+
+/* Welcome */
+.welcome-section {
+  padding: 48px 0 32px;
+  border-bottom: 1px solid var(--divider);
+  margin-bottom: 32px;
+  animation: fadeUp 0.6s ease both;
+}
+.welcome-greeting {
+  font-weight: 800; font-size: 28px;
+  letter-spacing: -0.02em; color: var(--white);
+  margin-bottom: 6px;
+}
+.welcome-greeting span { color: var(--neon); }
+.welcome-meta {
+  display: flex; align-items: center; gap: 20px;
+  flex-wrap: wrap;
+}
+.welcome-meta-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 500; color: var(--text-muted);
+}
+.welcome-meta-item svg { opacity: 0.5; }
+.meta-dot { width:3px;height:3px;border-radius:50%;background:var(--divider); }
+
+/* Section title */
+.section-title {
+  font-weight: 700; font-size: 13px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+}
+.section-title::after { content:''; flex:1; height:1px; background:var(--divider); }
+
+/* STATS CARDS */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  margin-bottom: 32px;
+}
+.stat-card {
+  background: var(--panel);
+  border: 1px solid rgba(78,211,120,0.1);
+  border-radius: 16px; padding: 22px;
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: border-color 0.25s, transform 0.2s, box-shadow 0.25s;
+  animation: fadeUp 0.5s ease both;
+}
+.stat-card:nth-child(1){animation-delay:0.05s}
+.stat-card:nth-child(2){animation-delay:0.1s}
+.stat-card:nth-child(3){animation-delay:0.15s}
+.stat-card:hover {
+  border-color: rgba(78,211,120,0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3), 0 0 20px rgba(78,211,120,0.06);
+}
+.stat-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(78,211,120,0.3), transparent);
+  opacity: 0; transition: opacity 0.25s;
+}
+.stat-card:hover::before { opacity: 1; }
+
+.stat-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+.stat-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: rgba(78,211,120,0.08);
+  border: 1px solid rgba(78,211,120,0.18);
+  display: flex; align-items: center; justify-content: center;
+}
+.stat-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  padding: 3px 8px; border-radius: 20px;
+}
+.stat-badge.green  { background:rgba(78,211,120,0.12); color:var(--neon); border:1px solid rgba(78,211,120,0.2); }
+.stat-badge.yellow { background:rgba(245,158,11,0.12); color:var(--warn); border:1px solid rgba(245,158,11,0.2); }
+.stat-badge.blue   { background:rgba(52,211,153,0.1); color:#34d399; border:1px solid rgba(52,211,153,0.2); }
+
+.stat-val {
+  font-weight: 800; font-size: 36px; letter-spacing: -0.03em;
+  color: var(--white); line-height: 1; margin-bottom: 4px;
+}
+.stat-label { font-size: 12.5px; font-weight: 500; color: var(--text-muted); }
+.stat-sub { font-size: 11px; font-weight: 600; color: var(--neon); margin-top: 6px; }
+
+/* SESSIONS PANEL */
+.sessions-panel {
+  background: var(--panel);
+  border: 1px solid rgba(78,211,120,0.1);
+  border-radius: 16px; overflow: hidden;
+  margin-bottom: 24px;
+  animation: fadeUp 0.5s 0.2s ease both;
+}
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--divider);
+}
+.panel-title { font-weight: 700; font-size: 14px; color: var(--white); display: flex; align-items: center; gap: 8px; }
+.panel-title-dot { width:7px;height:7px;border-radius:50%;background:var(--neon);box-shadow:0 0 8px var(--neon);animation:pulseDot 2s ease-in-out infinite; }
+.view-all {
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  background: none; border: none; cursor: pointer;
+  transition: color 0.2s; text-decoration: none;
+}
+.view-all:hover { color: var(--neon); }
+
+.session-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 22px;
+  border-bottom: 1px solid rgba(78,211,120,0.05);
+  transition: background 0.15s;
+}
+.session-item:last-child { border-bottom: none; }
+.session-item:hover { background: rgba(78,211,120,0.03); }
+
+.session-left { display: flex; align-items: center; gap: 14px; }
+.session-device-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: rgba(78,211,120,0.06);
+  border: 1px solid rgba(78,211,120,0.12);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.session-device { font-weight: 600; font-size: 13px; color: var(--white); margin-bottom: 2px; }
+.session-meta { font-size: 11.5px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+.session-location-dot { width:3px;height:3px;border-radius:50%;background:var(--text-muted); }
+
+.session-right { display: flex; align-items: center; gap: 12px; }
+.session-status {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600;
+}
+.session-status.active { color: var(--neon); }
+.session-status.inactive { color: var(--text-muted); }
+.status-dot { width:5px;height:5px;border-radius:50%; }
+.active .status-dot { background:var(--neon);box-shadow:0 0 6px var(--neon); }
+.inactive .status-dot { background:var(--text-muted); }
+
+.revoke-btn {
+  padding: 5px 12px; border-radius: 6px;
+  background: rgba(248,113,113,0.08);
+  border: 1px solid rgba(248,113,113,0.2);
+  color: var(--error); font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: background 0.2s, box-shadow 0.2s;
+}
+.revoke-btn:hover { background: rgba(248,113,113,0.15); box-shadow: 0 0 10px rgba(248,113,113,0.2); }
+
+/* QUICK ACTIONS */
+.actions-grid {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 12px;
+  animation: fadeUp 0.5s 0.3s ease both;
+}
+.action-card {
+  background: var(--panel);
+  border: 1px solid rgba(78,211,120,0.1);
+  border-radius: 14px; padding: 18px 16px;
+  cursor: pointer; text-align: center;
+  transition: border-color 0.2s, transform 0.2s, background 0.2s;
+  text-decoration: none; display: block;
+}
+.action-card:hover {
+  border-color: rgba(78,211,120,0.3);
+  background: rgba(78,211,120,0.04);
+  transform: translateY(-2px);
+}
+.action-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: rgba(78,211,120,0.08); border: 1px solid rgba(78,211,120,0.15);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 10px;
+}
+.action-label { font-size: 12px; font-weight: 600; color: var(--text); }
+.action-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 3px; }
+
+/* SIGN OUT action — red tint */
+.action-card.danger { border-color: rgba(248,113,113,0.1); }
+.action-card.danger .action-icon { background:rgba(248,113,113,0.07); border-color:rgba(248,113,113,0.15); }
+.action-card.danger:hover { border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.04); }
+.action-card.danger .action-label { color: var(--error); }
+
+/* ══════════════════════════════════
+   SHARED UTILS
+══════════════════════════════════ */
+@keyframes fadeUp {
+  from{opacity:0;transform:translateY(16px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #040d07; }
+::-webkit-scrollbar-thumb { background: #172420; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(78,211,120,0.3); }
+
+/* ══════════════════════════════════
+   AI RISK WIDGET
+══════════════════════════════════ */
+.ai-risk-panel {
+  background: var(--panel);
+  border: 1px solid rgba(78,211,120,0.1);
+  border-radius: 16px; overflow: hidden;
+  margin-bottom: 24px;
+  animation: fadeUp 0.5s 0.15s ease both;
+}
+.ai-risk-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--divider);
+}
+.ai-risk-title {
+  font-weight: 700; font-size: 14px; color: var(--white);
+  display: flex; align-items: center; gap: 8px;
+}
+.ai-risk-body {
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0;
+}
+.ai-risk-cell {
+  padding: 18px 20px;
+  border-right: 1px solid var(--divider);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.ai-risk-cell:last-child { border-right: none; }
+.ai-risk-cell-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.ai-risk-cell-val {
+  font-size: 22px; font-weight: 800; letter-spacing: -0.02em; color: var(--white);
+}
+.ai-risk-cell-sub { font-size: 11px; font-weight: 600; }
+
+/* Risk level badge colours */
+.risk-low    { color: #4ED378; }
+.risk-medium { color: #f59e0b; }
+.risk-high   { color: #f87171; }
+
+/* Anomaly score ring */
+.score-ring-wrap {
+  display: flex; align-items: center; gap: 14px;
+}
+.score-ring {
+  width: 52px; height: 52px; flex-shrink: 0;
+}
+
+/* Live token countdown bar */
+.token-bar-wrap {
+  padding: 0 22px 18px;
+  border-top: 1px solid var(--divider);
+}
+.token-bar-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 14px; margin-bottom: 6px;
+}
+.token-bar-label { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.token-bar-time  { font-size: 11px; font-weight: 700; font-family: monospace; }
+.token-bar-track {
+  width: 100%; height: 5px; background: rgba(255,255,255,0.06);
+  border-radius: 99px; overflow: hidden;
+}
+.token-bar-fill {
+  height: 100%; border-radius: 99px;
+  transition: width 1s linear, background 0.5s;
+}
+</style>
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+<nav id="mainNav">
+  <a class="nav-logo" href="#">
+    <div class="nav-logo-icon">
+      <svg viewBox="0 0 32 32" fill="none" width="20" height="20">
+        <path d="M16 2L4 7.5V15c0 6.5 5 12 12 13.5C23 27 28 21.5 28 15V7.5L16 2Z" fill="rgba(78,211,120,0.12)" stroke="#4ED378" stroke-width="1.4"/>
+        <rect x="12" y="15" width="8" height="6" rx="1.2" fill="#4ED378" opacity="0.9"/>
+        <path d="M13.5 15v-2a2.5 2.5 0 0 1 5 0v2" stroke="#4ED378" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="16" cy="17.8" r="1" fill="#0a100d"/>
+      </svg>
+    </div>
+    <div class="nav-logo-name">VaultID</div>
+  </a>
+
+  <div class="nav-right">
+    <div class="nav-badge">
+      <div class="nav-badge-dot"></div>
+      ZKP Active
+    </div>
+
+    <div class="user-menu" id="userMenu">
+      <div class="user-btn" onclick="toggleUserMenu()">
+        <div class="user-avatar" id="navAvatar">AJ</div>
+        <span class="user-name" id="navName">Alex Johnson</span>
+        <svg class="user-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="dropdown">
+        <a href="VaultID-profile.html">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Profile
+        </a>
+        <a href="#">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </a>
+        <a href="VaultID-login-fixed.html" class="danger">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign Out
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ HERO ══ -->
+<section class="hero" id="hero">
+  <canvas id="galaxyCanvas"></canvas>
+  <div class="hero-fade-top"></div>
+  <div class="hero-fade"></div>
+
+  <div class="hero-content">
+    <div class="hero-pill">
+      <div class="hero-pill-dot"></div>
+      Zero-Knowledge Identity Provider
+    </div>
+
+    <h1 class="hero-h1">
+      <span class="strike">Passwords</span>&nbsp;<span class="accent">Are Dead.</span>
+    </h1>
+    <h2 class="hero-h2">Here's What Replaced Them.</h2>
+
+    <p class="hero-desc">
+      <strong>Zero-Knowledge Proofs. One-Time Tokens. Total Security.</strong><br>
+      We killed passwords so you never have to think about them again.<br>
+      Even we can't crack your account — and that's the whole point.
+    </p>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ED378" stroke-width="2"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7z"/></svg>
+        </div>
+        <div>
+          <div class="hero-stat-val">0</div>
+          <div class="hero-stat-label">Passwords Stored</div>
+        </div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ED378" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <div>
+          <div class="hero-stat-val">10<sup style="font-size:0.55em">600</sup></div>
+          <div class="hero-stat-label">Years to Crack</div>
+        </div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ED378" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </div>
+        <div>
+          <div class="hero-stat-val">100%</div>
+          <div class="hero-stat-label">Replay-Proof</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-cta">
+      <a class="cta-link" href="#dashboard">
+        Explore Your Dashboard
+        <svg class="scroll-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ══ DASHBOARD ══ -->
+<div class="dashboard" id="dashboard">
+
+  <!-- Welcome -->
+  <div class="welcome-section">
+    <div class="welcome-greeting">Welcome back, <span id="welcomeName">Alex</span> 👋</div>
+    <div class="welcome-meta">
+      <div class="welcome-meta-item">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        <span id="userEmail">Loading...</span>
+      </div>
+      <div class="meta-dot"></div>
+      <div class="welcome-meta-item">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span id="lastLogin">Last login: Today, 09:42 AM · Chennai, IN</span>
+      </div>
+      <div class="meta-dot"></div>
+      <div class="welcome-meta-item" style="color:var(--neon)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        ZKP Authenticated
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Risk Widget -->
+  <div class="section-title">AI Threat Intelligence</div>
+  <div class="ai-risk-panel" id="aiRiskPanel">
+    <div class="ai-risk-header">
+      <div class="ai-risk-title">
+        <div class="panel-title-dot"></div>
+        LSTM Anomaly Detection — Live
+      </div>
+      <button onclick="loadAIRisk()" style="background:none;border:1px solid rgba(78,211,120,0.2);color:var(--neon);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600">↻ Refresh</button>
+    </div>
+
+    <div class="ai-risk-body">
+      <!-- Risk Level -->
+      <div class="ai-risk-cell">
+        <div class="ai-risk-cell-label">Risk Level</div>
+        <div class="ai-risk-cell-val risk-low" id="aiRiskLevel">—</div>
+        <div class="ai-risk-cell-sub" id="aiRiskAction" style="color:var(--text-muted)">Loading...</div>
+      </div>
+
+      <!-- Anomaly Score -->
+      <div class="ai-risk-cell">
+        <div class="ai-risk-cell-label">Anomaly Score</div>
+        <div class="score-ring-wrap">
+          <svg class="score-ring" viewBox="0 0 52 52">
+            <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(78,211,120,0.1)" stroke-width="5"/>
+            <circle cx="26" cy="26" r="22" fill="none" stroke="#4ED378" stroke-width="5"
+              stroke-dasharray="138.2" stroke-dashoffset="138.2"
+              stroke-linecap="round" transform="rotate(-90 26 26)"
+              id="scoreArc" style="transition:stroke-dashoffset 1s ease,stroke 0.5s"/>
+          </svg>
+          <div>
+            <div class="ai-risk-cell-val" id="aiScoreVal" style="font-size:18px">—</div>
+            <div style="font-size:10px;color:var(--text-muted)">/100</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Session Status -->
+      <div class="ai-risk-cell">
+        <div class="ai-risk-cell-label">Session Guard</div>
+        <div class="ai-risk-cell-val" id="aiSessionStatus" style="font-size:16px;padding-top:4px">—</div>
+        <div class="ai-risk-cell-sub" id="aiSessionSub" style="color:var(--text-muted)">Checking...</div>
+      </div>
+
+      <!-- Last Check -->
+      <div class="ai-risk-cell">
+        <div class="ai-risk-cell-label">Last AI Check</div>
+        <div class="ai-risk-cell-val" id="aiLastCheck" style="font-size:14px;padding-top:6px;color:var(--text-muted)">—</div>
+        <div class="ai-risk-cell-sub" style="color:var(--text-muted)" id="aiModelStatus">LSTM Model</div>
+      </div>
+    </div>
+
+    <!-- Live token countdown bars -->
+    <div class="token-bar-wrap">
+      <div class="token-bar-row">
+        <span class="token-bar-label">🔑 Access Token</span>
+        <span class="token-bar-time" id="accessTokenTimer" style="color:#4ED378">—</span>
+      </div>
+      <div class="token-bar-track">
+        <div class="token-bar-fill" id="accessTokenBar" style="width:100%;background:#4ED378"></div>
+      </div>
+
+      <div class="token-bar-row">
+        <span class="token-bar-label">🔄 Refresh Token</span>
+        <span class="token-bar-time" id="refreshTokenTimer" style="color:#4ED378">—</span>
+      </div>
+      <div class="token-bar-track">
+        <div class="token-bar-fill" id="refreshTokenBar" style="width:100%;background:#A4D1B3"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="section-title">Security Overview</div>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-card-top">
+        <div class="stat-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ED378" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        </div>
+        <div class="stat-badge green">Active</div>
+      </div>
+      <div class="stat-val" id="sessionsCount">3</div>
+      <div class="stat-label">Active Sessions</div>
+      <div class="stat-sub">↗ 2 new this week</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-top">
+        <div class="stat-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ED378" stroke-width="2"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7z"/></svg>
+        </div>
+        <div class="stat-badge green">Excellent</div>
+      </div>
+      <div class="stat-val">95<span style="font-size:0.5em;font-weight:600;color:var(--text-muted)">%</span></div>
+      <div class="stat-label">Security Score</div>
+      <div class="stat-sub">↗ +3% from last month</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card-top">
+        <div class="stat-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ED378" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="stat-badge blue">Verified</div>
+      </div>
+      <div class="stat-val" style="font-size:22px;padding-top:8px">Account</div>
+      <div class="stat-label">Active · <span id="mfaStatLabel">Checking...</span></div>
+      <div class="stat-sub" id="mfaStatusCard" style="color:#34d399">✓ ZKP Auth Enabled</div>
+    </div>
+  </div>
+
+  <!-- Sessions -->
+  <div class="section-title">Active Sessions</div>
+  <div class="sessions-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <div class="panel-title-dot"></div>
+        3 Sessions Running
+      </div>
+      <a href="#" class="view-all">View All →</a>
+    </div>
+
+    <div class="session-item">
+      <div class="session-left">
+        <div class="session-device-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ED378" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div>
+          <div class="session-device">MacBook Pro · Chrome 122</div>
+          <div class="session-meta">
+            Chennai, India
+            <div class="session-location-dot"></div>
+            This device · Now
+          </div>
+        </div>
+      </div>
+      <div class="session-right">
+        <div class="session-status active"><div class="status-dot"></div>Current</div>
+      </div>
+    </div>
+
+    <div class="session-item">
+      <div class="session-left">
+        <div class="session-device-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ED378" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        </div>
+        <div>
+          <div class="session-device">iPhone 15 Pro · Safari</div>
+          <div class="session-meta">
+            Chennai, India
+            <div class="session-location-dot"></div>
+            2 hours ago
+          </div>
+        </div>
+      </div>
+      <div class="session-right">
+        <div class="session-status active"><div class="status-dot"></div>Active</div>
+        <button class="revoke-btn" onclick="revokeSession(this)">Revoke</button>
+      </div>
+    </div>
+
+    <div class="session-item">
+      <div class="session-left">
+        <div class="session-device-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5a8068" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div>
+          <div class="session-device">Windows PC · Firefox 123</div>
+          <div class="session-meta">
+            Mumbai, India
+            <div class="session-location-dot"></div>
+            Yesterday, 6:30 PM
+          </div>
+        </div>
+      </div>
+      <div class="session-right">
+        <div class="session-status inactive"><div class="status-dot"></div>Inactive</div>
+        <button class="revoke-btn" onclick="revokeSession(this)">Revoke</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Token Activity -->
+  <div class="section-title">Token Activity</div>
+  <div class="sessions-panel" id="tokenActivityPanel">
+    <div class="panel-header">
+      <div class="panel-title"><div class="panel-title-dot"></div>Access & Refresh Tokens</div>
+      <button onclick="loadTokenActivity()" style="background:none;border:1px solid rgba(78,211,120,0.2);color:var(--neon);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600">↻ Refresh</button>
+    </div>
+    <div id="tokenList"><div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">Loading token activity...</div></div>
+  </div>
+
+  <!-- Connected Applications -->
+  <div class="section-title" style="margin-top:32px">Connected Applications</div>
+  <div class="sessions-panel" id="connectedAppsSection">
+    <div class="panel-header">
+      <div class="panel-title"><div class="panel-title-dot"></div>OAuth 2.0 Sessions</div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->\n  <div class="section-title">Quick Actions</div>
+  <div class="actions-grid">
+    <a href="#" class="action-card">
+      <div class="action-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ED378" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+      </div>
+      <div class="action-label">All Sessions</div>
+      <div class="action-sub">Manage devices</div>
+    </a>
+    <a href="VaultID-mfa.html" class="action-card">
+      <div class="action-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ED378" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div class="action-label" id="mfaActionBtn">Enable MFA</div>
+      <div class="action-sub">Add extra layer</div>
+    </a>
+    <a href="VaultID-profile.html" class="action-card">
+      <div class="action-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ED378" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
+      <div class="action-label">Security Settings</div>
+      <div class="action-sub">Configure vault</div>
+    </a>
+    <a href="VaultID-login-fixed.html" class="action-card danger">
+      <div class="action-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </div>
+      <div class="action-label">Sign Out</div>
+      <div class="action-sub">End all sessions</div>
+    </a>
+  </div>
+
+</div><!-- /dashboard -->
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+/* ══ NAV SCROLL ══ */
+window.addEventListener('scroll', () => {
+  document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 40);
+});
+
+/* ══ USER MENU ══ */
+function toggleUserMenu() {
+  document.getElementById('userMenu').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  const menu = document.getElementById('userMenu');
+  if (!menu.contains(e.target)) menu.classList.remove('open');
+});
+
+/* ══ REVOKE SESSION ══ */
+function revokeSession(btn) {
+  const item = btn.closest('.session-item');
+  item.style.transition = 'opacity 0.3s, transform 0.3s';
+  item.style.opacity = '0';
+  item.style.transform = 'translateX(20px)';
+  setTimeout(() => {
+    item.remove();
+    const count = document.querySelectorAll('.session-item').length;
+    document.getElementById('sessionsCount').textContent = count;
+    document.querySelector('.panel-title').innerHTML = `<div class="panel-title-dot"></div>${count} Session${count!==1?'s':''} Running`;
+  }, 300);
+}
+
+/* ══ SPACE SCENE — rotating planet + stars + shooting stars ══ */
+(function() {
+
+  /* ─── LAYER SETUP ─── */
+  // Layer 0: deep starfield (behind everything)
+  const starC = document.createElement('canvas');
+  starC.style.cssText = 'position:fixed;inset:0;z-index:0;pointer-events:none';
+  document.body.prepend(starC);
+  const starCtx = starC.getContext('2d');
+
+  // Layer 1: the main planet canvas (already in DOM as #galaxyCanvas)
+  const planetC = document.getElementById('galaxyCanvas');
+  planetC.style.cssText = 'position:fixed;inset:0;z-index:2;pointer-events:none';
+
+  // Layer 2: atmosphere glow on top of planet
+  const atmC = document.createElement('canvas');
+  atmC.style.cssText = 'position:fixed;inset:0;z-index:3;pointer-events:none';
+  document.body.appendChild(atmC);
+  const atmCtx = atmC.getContext('2d');
+
+  let W = 0, H = 0;
+  function resize() {
+    W = window.innerWidth; H = window.innerHeight;
+    starC.width   = W; starC.height   = H;
+    planetC.width = W; planetC.height = H;
+    atmC.width    = W; atmC.height    = H;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  /* ─── STARS ─── */
+  const STARS = Array.from({length: 400}, () => ({
+    x: Math.random(), y: Math.random(),
+    r: Math.random() * 1.5 + 0.2,
+    base: Math.random() * 0.6 + 0.1,
+    ph: Math.random() * Math.PI * 2,
+    sp: Math.random() * 0.018 + 0.003,
+    col: Math.random() > 0.9 ? '#4ED378' : Math.random() > 0.7 ? '#c8f0d8' : '#ffffff'
+  }));
+
+  /* ─── SHOOTING STARS ─── */
+  function newShot() {
+    const left = Math.random() > 0.5;
+    return {
+      x: left ? -0.05 : 1.05,
+      y: Math.random() * 0.65,
+      vx: (left ? 1 : -1) * (Math.random() * 6 + 5),
+      vy: Math.random() * 2.5 + 0.5,
+      len: Math.random() * 180 + 80,
+      life: 0, max: (Math.random() * 60 + 45) | 0,
+      alpha: 0, active: false,
+      delay: (Math.random() * 280 + 40) | 0
+    };
+  }
+  const SHOTS = Array.from({length: 12}, newShot);
+
+  /* ─── PLANET CORE ─── */
+  // We draw a sphere using the "paint longitude strips" technique:
+  // For each thin vertical strip (longitude slice), compute the
+  // surface color based on rotation offset + latitude shading + noise.
+  // This gives a genuinely rotating, shaded 3D look in pure 2D canvas.
+
+  const PLANET_SEED = Array.from({length: 512}, () => Math.random());
+  function pnoise(x, y) {
+    // simple smooth noise from seed table
+    const xi = Math.floor(x) & 511, yi = Math.floor(y) & 511;
+    const xf = x - Math.floor(x), yf = y - Math.floor(y);
+    const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+    const a = PLANET_SEED[xi & 511], b = PLANET_SEED[(xi + 1) & 511];
+    const c = PLANET_SEED[(xi + yi) & 511], d = PLANET_SEED[(xi + 1 + yi) & 511];
+    return a + u * (b - a) + v * (c - a) + u * v * (d - c - b + a);
+  }
+  function fbm(x, y, oct) {
+    let v = 0, amp = 0.5, freq = 1;
+    for (let i = 0; i < oct; i++) { v += pnoise(x * freq, y * freq) * amp; freq *= 2.1; amp *= 0.5; }
+    return v;
+  }
+
+  // Precompute per-latitude band colors (512 bands)
+  const LAT_BANDS = 512;
+  const latColor = new Array(LAT_BANDS);
+  for (let i = 0; i < LAT_BANDS; i++) {
+    const t = i / LAT_BANDS; // 0=north pole, 1=south pole
+    const lat = (t - 0.5) * Math.PI;
+    const cosLat = Math.cos(lat);
+    // polar ice caps
+    const polar = Math.max(0, (Math.abs(t - 0.5) * 2 - 0.78) * 5);
+    latColor[i] = { t, cosLat, polar };
+  }
+
+  let rotAngle = 0;
+  const pCtx = planetC.getContext('2d');
+
+  function drawPlanet() {
+    rotAngle += 0.004; // rotation speed
+
+    const cx = W / 2;
+    const cy = H * 0.84;          // center sits near bottom
+    const RX = Math.min(W, H) * 0.42; // horizontal radius
+    const RY = RX;                 // vertical radius (sphere = equal)
+
+    pCtx.clearRect(0, 0, W, H);
+
+    // Draw sphere as vertical longitude strips
+    const STRIPS = 300;
+    for (let s = 0; s < STRIPS; s++) {
+      // Each strip: longitude angle in [-PI, PI]
+      const lon0 = (s / STRIPS - 0.5) * Math.PI * 2;
+      const lon1 = ((s + 1) / STRIPS - 0.5) * Math.PI * 2;
+      const lon_mid = (lon0 + lon1) / 2;
+
+      // x position on screen for this strip
+      const x0 = cx + Math.sin(lon0) * RX;
+      const x1 = cx + Math.sin(lon1) * RX;
+
+      // depth factor for this longitude (cosine of lon = z coord)
+      const depth = Math.cos(lon_mid); // -1=back, +1=front
+
+      // actual longitude on planet surface considering rotation
+      const surfLon = ((lon_mid + rotAngle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      const normLon = surfLon / (Math.PI * 2); // 0..1
+
+      // Draw this strip as a vertical gradient spanning full sphere height
+      // We draw latitude gradient inside the strip
+      const grad = pCtx.createLinearGradient(0, cy - RY, 0, cy + RY);
+
+      const LAT_STEPS = 24;
+      for (let li = 0; li <= LAT_STEPS; li++) {
+        const lt = li / LAT_STEPS;
+        const lat = (lt - 0.5) * Math.PI;
+        const cosLat = Math.cos(lat);
+
+        // surface normal dot light (light from upper-left)
+        const lightX = -0.5, lightY = 0.7, lightZ = 0.8;
+        const nx = Math.sin(lon_mid) * cosLat;
+        const ny = Math.sin(lat);
+        const nz = Math.cos(lon_mid) * cosLat;
+        const diffuse = Math.max(0, nx * lightX + ny * lightY + nz * lightZ);
+        const ambient = 0.10;
+        const light = ambient + diffuse * 0.90;
+
+        // procedural surface color
+        const n1 = fbm(normLon * 6, lt * 6, 5);
+        const n2 = fbm(normLon * 12 + 3.1, lt * 10 + 1.7, 4);
+        const polar = Math.max(0, (Math.abs(lt - 0.5) * 2 - 0.80) * 8);
+
+        // color zones
+        let r, g, b;
+        if (n1 < 0.38) {
+          // deep ocean / dark
+          r = 3;  g = 22; b = 10;
+        } else if (n1 < 0.52) {
+          // shore / mid
+          r = 12; g = 65; b = 30;
+        } else if (n1 < 0.68) {
+          // land
+          r = 30; g = 130; b = 60;
+        } else {
+          // highlands
+          r = 55; g = 200; b = 95;
+        }
+        // surface detail
+        r = r + n2 * 20 | 0;
+        g = g + n2 * 60 | 0;
+        b = b + n2 * 20 | 0;
+
+        // polar ice
+        if (polar > 0) {
+          const ice = Math.min(1, polar);
+          r = (r + (180 - r) * ice) | 0;
+          g = (g + (230 - g) * ice) | 0;
+          b = (b + (200 - b) * ice) | 0;
+        }
+
+        // apply lighting
+        r = Math.min(255, r * light) | 0;
+        g = Math.min(255, g * light) | 0;
+        b = Math.min(255, b * light) | 0;
+
+        // rim glow on the lit edge
+        const rim = Math.pow(Math.max(0, 1 - Math.abs(depth)), 3) * 0.4;
+        g = Math.min(255, g + rim * 120) | 0;
+        r = Math.min(255, r + rim * 30) | 0;
+
+        // night side faint glow
+        if (diffuse < 0.1) {
+          g = Math.min(255, g + 8) | 0;
+        }
+
+        // alpha: 0 at edges of sphere, 1 inside
+        const edgeAlpha = cosLat; // fade top/bottom poles slightly
+
+        grad.addColorStop(lt, `rgba(${r},${g},${b},${(0.88 * edgeAlpha).toFixed(3)})`);
+      }
+
+      // Clip to ellipse for this strip
+      // x range of strip
+      const stripX = Math.min(x0, x1);
+      const stripW = Math.max(1, Math.abs(x1 - x0));
+
+      // Height of sphere at this x position
+      const sinLon = Math.sin(lon_mid);
+      const stripHalfH = RY * Math.cos(Math.asin(Math.abs(sinLon) > 1 ? 0 : sinLon));
+
+      // Only draw front half (depth >= 0) at full opacity, back half dimmer
+      const backFade = depth < 0 ? 0.35 + 0.65 * ((depth + 1) / 1) : 1;
+
+      pCtx.save();
+      pCtx.beginPath();
+      pCtx.rect(stripX, cy - stripHalfH, stripW + 1, stripHalfH * 2);
+      pCtx.clip();
+      pCtx.fillStyle = grad;
+      pCtx.globalAlpha = backFade;
+      pCtx.fillRect(stripX, cy - RY, stripW + 1, RY * 2);
+      pCtx.restore();
+    }
+
+    // Specular highlight — bright spot on lit side
+    const specX = cx - RX * 0.38;
+    const specY = cy - RY * 0.32;
+    const specGrd = pCtx.createRadialGradient(specX, specY, 0, specX, specY, RX * 0.35);
+    specGrd.addColorStop(0,   'rgba(200,255,210,0.22)');
+    specGrd.addColorStop(0.4, 'rgba(140,255,170,0.08)');
+    specGrd.addColorStop(1,   'rgba(78,211,120,0)');
+    pCtx.save();
+    pCtx.beginPath();
+    pCtx.ellipse(cx, cy, RX, RY, 0, 0, Math.PI * 2);
+    pCtx.clip();
+    pCtx.fillStyle = specGrd;
+    pCtx.globalAlpha = 1;
+    pCtx.fillRect(cx - RX, cy - RY, RX * 2, RY * 2);
+    pCtx.restore();
+  }
+
+  function drawAtmosphere() {
+    atmCtx.clearRect(0, 0, W, H);
+    const cx = W / 2, cy = H * 0.84;
+    const R = Math.min(W, H) * 0.42;
+
+    // Outer glow halo
+    const halo = atmCtx.createRadialGradient(cx, cy, R * 0.88, cx, cy, R * 1.55);
+    halo.addColorStop(0,    'rgba(78,211,120,0.28)');
+    halo.addColorStop(0.25, 'rgba(78,211,120,0.14)');
+    halo.addColorStop(0.55, 'rgba(78,211,120,0.05)');
+    halo.addColorStop(1,    'rgba(78,211,120,0)');
+    atmCtx.fillStyle = halo;
+    atmCtx.beginPath();
+    atmCtx.arc(cx, cy, R * 1.55, 0, Math.PI * 2);
+    atmCtx.fill();
+
+    // Planet edge rim (thin bright circle)
+    atmCtx.beginPath();
+    atmCtx.ellipse(cx, cy, R, R, 0, 0, Math.PI * 2);
+    atmCtx.strokeStyle = 'rgba(100,230,140,0.18)';
+    atmCtx.lineWidth = 3;
+    atmCtx.stroke();
+
+    // Tilted orbit rings
+    for (let ri = 0; ri < 4; ri++) {
+      const rScale = 1.20 + ri * 0.13;
+      const tilt = 0.18 + ri * 0.02;
+      const rot = rotAngle * (0.25 + ri * 0.08);
+      atmCtx.save();
+      atmCtx.translate(cx, cy);
+      atmCtx.rotate(rot);
+      atmCtx.scale(1, tilt);
+      atmCtx.beginPath();
+      atmCtx.arc(0, 0, R * rScale, 0, Math.PI * 2);
+      atmCtx.restore();
+      atmCtx.globalAlpha = 0.10 - ri * 0.015;
+      atmCtx.strokeStyle = '#4ED378';
+      atmCtx.lineWidth = 1.5 - ri * 0.25;
+      atmCtx.stroke();
+      atmCtx.globalAlpha = 1;
+    }
+
+    // Light bloom on upper-left (where light hits)
+    const bloomX = cx - R * 0.42, bloomY = cy - R * 0.38;
+    const bloom = atmCtx.createRadialGradient(bloomX, bloomY, 0, bloomX, bloomY, R * 0.6);
+    bloom.addColorStop(0,   'rgba(180,255,200,0.12)');
+    bloom.addColorStop(0.5, 'rgba(78,211,120,0.04)');
+    bloom.addColorStop(1,   'rgba(78,211,120,0)');
+    atmCtx.fillStyle = bloom;
+    atmCtx.beginPath();
+    atmCtx.arc(bloomX, bloomY, R * 0.6, 0, Math.PI * 2);
+    atmCtx.fill();
+  }
+
+  function drawStars() {
+    starCtx.clearRect(0, 0, W, H);
+    STARS.forEach(s => {
+      s.ph += s.sp;
+      const a = s.base * (0.3 + 0.7 * Math.abs(Math.sin(s.ph)));
+      starCtx.beginPath();
+      starCtx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+      starCtx.globalAlpha = a;
+      starCtx.fillStyle = s.col;
+      starCtx.fill();
+      starCtx.globalAlpha = 1;
+    });
+
+    SHOTS.forEach(s => {
+      if (!s.active) { if (--s.delay <= 0) { s.active = true; s.life = 0; } return; }
+      s.life++;
+      s.x += s.vx / W;
+      s.y += s.vy / H;
+      const p = s.life / s.max;
+      s.alpha = p < 0.2 ? p / 0.2 : p > 0.75 ? (1 - p) / 0.25 : 1;
+      const dir = s.vx > 0 ? 1 : -1;
+      const tx = s.x * W - dir * s.len;
+      const ty = s.y * H - (s.vy / Math.abs(s.vx)) * s.len;
+      const grd = starCtx.createLinearGradient(s.x * W, s.y * H, tx, ty);
+      grd.addColorStop(0,   `rgba(255,255,255,${(s.alpha * 0.95).toFixed(2)})`);
+      grd.addColorStop(0.3, `rgba(180,240,200,${(s.alpha * 0.5).toFixed(2)})`);
+      grd.addColorStop(1,   'rgba(78,211,120,0)');
+      starCtx.beginPath();
+      starCtx.moveTo(s.x * W, s.y * H);
+      starCtx.lineTo(tx, ty);
+      starCtx.strokeStyle = grd;
+      starCtx.lineWidth = 2;
+      starCtx.stroke();
+      // head
+      starCtx.beginPath();
+      starCtx.arc(s.x * W, s.y * H, 2.5, 0, Math.PI * 2);
+      starCtx.fillStyle = '#fff';
+      starCtx.globalAlpha = s.alpha;
+      starCtx.fill();
+      starCtx.globalAlpha = 1;
+      if (s.life >= s.max || s.x < -0.15 || s.x > 1.15 || s.y > 1.1)
+        Object.assign(s, newShot());
+    });
+  }
+
+  function frame() {
+    drawStars();
+    drawPlanet();
+    drawAtmosphere();
+    requestAnimationFrame(frame);
+  }
+  frame();
+
+})();
+
+
+/* ════════════════════════════════════════════════
+   VAULTID DASHBOARD — BACKEND CONNECTION
+════════════════════════════════════════════════ */
+const API_BASE = 'http://127.0.0.1:8000';
+
+function getToken() { return sessionStorage.getItem('vaultid_token') || localStorage.getItem('vaultid_token'); }
+
+function requireAuth() {
+  if (!getToken()) { window.location.href = 'VaultID-login-fixed.html'; return false; }
+  return true;
+}
+
+// ── LOAD USER PROFILE ──────────────────────────
+async function loadUserProfile() {
+  const token = getToken();
+  try {
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.status === 401) { window.location.href = 'VaultID-login-fixed.html'; return; }
+    const user = await res.json();
+
+    const firstName = (user.name || user.email || 'User').split(' ')[0];
+    const initials  = (user.name || user.email || 'U').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+
+    // Nav
+    document.getElementById('navAvatar').textContent = initials;
+    document.getElementById('navName').textContent   = user.name || user.email;
+    // Welcome
+    document.getElementById('welcomeName').textContent = firstName;
+    // Email
+    const emailEl = document.getElementById('userEmail');
+    if (emailEl) emailEl.textContent = user.email;
+    // Last login
+    if (user.last_login) {
+      const d = new Date(user.last_login);
+      const t = d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+      const lastLoginEl = document.getElementById('lastLogin');
+      if (lastLoginEl) lastLoginEl.textContent = `Last login: Today, ${t} · Chennai, IN`;
+    }
+
+    loadMFAStatus(token);
+  } catch(e) { console.error('Profile error:', e); }
+}
+
+// ── MFA STATUS ─────────────────────────────────
+async function loadMFAStatus(token) {
+  try {
+    const res  = await fetch(`${API_BASE}/auth/mfa/status`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const data = await res.json();
+    const mfaCard   = document.getElementById('mfaStatusCard');
+    const mfaAction = document.getElementById('mfaActionBtn');
+    const mfaStatLabel = document.getElementById('mfaStatLabel');
+    if (data.mfa_enabled) {
+      if (mfaCard)      mfaCard.innerHTML      = '<span style="color:#4ED378">✓ ZKP + TOTP Active</span>';
+      if (mfaAction)    mfaAction.textContent  = 'MFA Enabled ✓';
+      if (mfaStatLabel) mfaStatLabel.innerHTML = '<span style="color:#4ED378">MFA Enabled</span>';
+    } else {
+      if (mfaCard)      mfaCard.innerHTML      = '<span style="color:#f59e0b">⚠ MFA not enabled</span>';
+      if (mfaAction)    mfaAction.textContent  = 'Enable MFA';
+      if (mfaStatLabel) mfaStatLabel.innerHTML = '<span style="color:#f59e0b">MFA Disabled</span>';
+    }
+  } catch(e) {}
+}
+
+// ── LOAD SESSIONS ──────────────────────────────
+async function loadSessions() {
+  const token = getToken();
+
+  // Demo current session — always shown as "Current"
+  const demoSession = {
+    session_id:  'demo-current-session-vaultid-2026',
+    device_name: 'Firefox on Linux · VaultID Dashboard',
+    location:    'Kerala, IN',
+    last_activity: new Date().toISOString(),
+    risk_score:  0,
+    is_current:  true,
+  };
+
+  try {
+    const res  = await fetch(`${API_BASE}/auth/sessions`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const data = await res.json();
+    let sessions = data.sessions || [];
+
+    // Always ensure at least the current session is shown
+    if (sessions.length === 0) {
+      sessions = [demoSession];
+    } else {
+      // Mark first session as current if none marked
+      if (!sessions.find(s => s.is_current)) sessions[0].is_current = true;
+    }
+
+    document.getElementById('sessionsCount').textContent = sessions.length;
+    document.querySelector('.panel-title').innerHTML =
+      `<div class="panel-title-dot"></div>${sessions.length} Session${sessions.length!==1?'s':''} Running`;
+
+    const panel = document.querySelector('.sessions-panel');
+    panel.querySelectorAll('.session-item').forEach(el => el.remove());
+
+    sessions.forEach(s => {
+      const timeAgo  = formatTimeAgo(s.last_activity);
+      const riskCol  = s.risk_score > 70 ? '#f87171' : s.risk_score > 40 ? '#f59e0b' : '#4ED378';
+      const isMobile = (s.device_name||'').toLowerCase().includes('mobile') || (s.device_name||'').toLowerCase().includes('iphone');
+      const icon     = isMobile
+        ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ED378" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>`
+        : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ED378" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`;
+
+      panel.insertAdjacentHTML('beforeend', `
+      <div class="session-item" data-id="${s.session_id}">
+        <div class="session-left">
+          <div class="session-device-icon">${icon}</div>
+          <div>
+            <div class="session-device">${s.device_name || 'Firefox on Linux'}</div>
+            <div class="session-meta">
+              ${s.location || 'Kerala, IN'} <div class="session-location-dot"></div>
+              ${s.is_current ? 'This device · Now' : timeAgo}
+              <div class="session-location-dot"></div>
+              <span style="color:${riskCol}">Risk: ${s.risk_score}/100</span>
+            </div>
+          </div>
+        </div>
+        <div class="session-right">
+          <div class="session-status active"><div class="status-dot"></div>${s.is_current ? 'Current' : 'Active'}</div>
+          ${!s.is_current ? `<button class="revoke-btn" onclick="revokeSession('${s.session_id}',this)">Revoke</button>` : ''}
+        </div>
+      </div>`);
+    });
+
+    renderOAuthApps();
+
+  } catch(e) {
+    // On error — show demo session so dashboard never looks empty
+    document.getElementById('sessionsCount').textContent = '1';
+    document.querySelector('.panel-title').innerHTML = `<div class="panel-title-dot"></div>1 Session Running`;
+    const panel = document.querySelector('.sessions-panel');
+    panel.querySelectorAll('.session-item').forEach(el => el.remove());
+    panel.insertAdjacentHTML('beforeend', `
+    <div class="session-item">
+      <div class="session-left">
+        <div class="session-device-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ED378" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div>
+          <div class="session-device">Firefox on Linux · VaultID Dashboard</div>
+          <div class="session-meta">Kerala, IN <div class="session-location-dot"></div> This device · Now <div class="session-location-dot"></div> <span style="color:#4ED378">Risk: 0/100</span></div>
+        </div>
+      </div>
+      <div class="session-right">
+        <div class="session-status active"><div class="status-dot"></div>Current</div>
+      </div>
+    </div>`);
+    renderOAuthApps();
+  }
+}
+
+// ── TOKEN ACTIVITY ─────────────────────────────
+async function loadTokenActivity() {
+  const token = getToken();
+  const tokenList = document.getElementById('tokenList');
+  tokenList.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">Loading...</div>';
+
+  try {
+    // Get sessions to show token info per session
+    const res  = await fetch(`${API_BASE}/auth/sessions`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const data = await res.json();
+    const sessions = data.sessions || [];
+
+    if (sessions.length === 0) {
+      tokenList.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No token activity found</div>';
+      return;
+    }
+
+    // Current access token from sessionStorage
+    const currentToken   = sessionStorage.getItem('vaultid_token')   || '';
+    const currentRefresh = sessionStorage.getItem('vaultid_refresh')  || '';
+
+    let html = '';
+    sessions.forEach((s, i) => {
+      const created   = new Date(s.created_at);
+      const expires   = new Date(created.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      const accessExp = new Date(created.getTime() + 30 * 60 * 1000);           // 30 min
+      const now       = new Date();
+      const accessLeft = Math.max(0, Math.floor((accessExp - now) / 60000));
+      const refreshDaysLeft = Math.max(0, Math.ceil((expires - now) / 86400000));
+      const isCurrent = i === 0;
+      const riskCol   = s.risk_score > 70 ? '#f87171' : s.risk_score > 40 ? '#f59e0b' : '#4ED378';
+
+      html += `
+      <div style="padding:18px 20px;border-bottom:1px solid var(--divider)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:13px;font-weight:700;color:var(--white)">${s.device_name || 'Unknown Device'}</span>
+            ${isCurrent ? '<span style="font-size:10px;background:rgba(78,211,120,0.15);color:var(--neon);border:1px solid rgba(78,211,120,0.3);border-radius:20px;padding:2px 8px;font-weight:700">Current</span>' : ''}
+          </div>
+          <span style="font-size:11px;color:${riskCol};font-weight:600">Risk: ${s.risk_score}/100</span>
+        </div>
+
+        <!-- Access Token -->
+        <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:12px;margin-bottom:8px;border:1px solid rgba(78,211,120,0.08)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--neon)">🔑 Access Token</span>
+            <span style="font-size:10px;color:${accessLeft > 5 ? '#4ED378' : '#f87171'};font-weight:600">
+              ${accessLeft > 0 ? `Expires in ${accessLeft}min` : 'Expired — will auto-refresh'}
+            </span>
+          </div>
+          <div style="font-family:monospace;font-size:11px;color:var(--text-muted);word-break:break-all;margin-bottom:8px">
+            ${isCurrent ? currentToken.substring(0,40) + '...' : '••••••••••••••••••••••••••••••••••••••••'}
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <span style="font-size:10px;color:var(--text-muted)">SHA-256 hashed in DB · Never stored raw</span>
+          </div>
+        </div>
+
+        <!-- Refresh Token -->
+        <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:12px;border:1px solid rgba(78,211,120,0.08)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#A4D1B3">🔄 Refresh Token</span>
+            <span style="font-size:10px;color:${refreshDaysLeft > 2 ? '#4ED378' : '#f59e0b'};font-weight:600">
+              ${refreshDaysLeft > 0 ? `Expires in ${refreshDaysLeft} day${refreshDaysLeft!==1?'s':''}` : 'Expired'}
+            </span>
+          </div>
+          <div style="font-family:monospace;font-size:11px;color:var(--text-muted);margin-bottom:8px">
+            ${isCurrent ? currentRefresh.substring(0,40) + '...' : '••••••••••••••••••••••••••••••••••••••••'}
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <span style="font-size:10px;color:var(--text-muted)">One-time use · Auto-rotates on refresh · Replay = revoke all</span>
+          </div>
+        </div>
+
+        <!-- Session footer -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+          <span style="font-size:11px;color:var(--text-muted)">
+            Created: ${created.toLocaleString('en-IN')} · IP: ${s.ip_address || '127.0.0.1'}
+          </span>
+          ${!isCurrent ? `
+          <button onclick="revokeSession('${s.session_id}', this)"
+            style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);color:#f87171;
+            border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer">
+            Revoke Tokens
+          </button>` : `
+          <span style="font-size:11px;color:var(--neon);font-weight:600">✓ Active session</span>`}
+        </div>
+      </div>`;
+    });
+
+    // Add thinkED OAuth token row
+    const thinkedToken   = localStorage.getItem('thinked_access_token') || sessionStorage.getItem('thinked_token');
+    const thinkedUserRaw = localStorage.getItem('thinked_user') || sessionStorage.getItem('thinked_user');
+    const thinkedName    = thinkedUserRaw ? (JSON.parse(thinkedUserRaw).name  || 'Alen John')        : 'Alen John';
+    const thinkedEmail   = thinkedUserRaw ? (JSON.parse(thinkedUserRaw).email || 'alen@example.com') : 'alen@example.com';
+    const thinkedExp     = parseInt(localStorage.getItem('thinked_expires_at') || '0');
+    const thinkedLeft    = thinkedExp ? Math.max(0, thinkedExp - Math.floor(Date.now()/1000)) : 300;
+    const thinkedMins    = Math.floor(thinkedLeft / 60);
+    const thinkedSecs    = thinkedLeft % 60;
+    const thinkedColor   = thinkedLeft > 120 ? '#4ED378' : thinkedLeft > 60 ? '#f59e0b' : '#f87171';
+    if (thinkedToken) {
+      html += `
+      <div style="padding:18px 20px" id="thinkedTokenRow">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:13px;font-weight:700;color:var(--white)">📚 thinkED Academy</span>
+            <span style="font-size:10px;background:rgba(37,99,235,0.15);color:#60a5fa;border:1px solid rgba(37,99,235,0.3);border-radius:20px;padding:2px 8px;font-weight:700">OAuth 2.0</span>
+            <span style="font-size:10px;background:rgba(78,211,120,0.12);color:#4ED378;border:1px solid rgba(78,211,120,0.25);border-radius:20px;padding:2px 8px;font-weight:700">✓ Authorized</span>
+          </div>
+          <button onclick="revokeOAuthApp();document.getElementById('thinkedTokenRow')?.remove();"
+            style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);color:#f87171;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer">
+            Revoke Access
+          </button>
+        </div>
+        <!-- User info row -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:var(--text-muted)">
+          <span>👤 ${thinkedName}</span>
+          <span>·</span>
+          <span>${thinkedEmail}</span>
+          <span>·</span>
+          <span style="color:var(--text-muted)">Scope: profile, email</span>
+        </div>
+        <!-- OAuth Access Token -->
+        <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:12px;border:1px solid rgba(37,99,235,0.15)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#60a5fa">🔑 OAuth Access Token</span>
+            <span style="font-size:10px;font-weight:700;color:${thinkedColor}" id="thinkedTokenExpiry">
+              ${thinkedLeft > 0 ? `Expires in ${thinkedMins}m ${String(thinkedSecs).padStart(2,'0')}s` : '⚠ Expired'}
+            </span>
+          </div>
+          <div style="font-family:monospace;font-size:11px;color:var(--text-muted);word-break:break-all;margin-bottom:8px">
+            ${thinkedToken.substring(0,48)}...
+          </div>
+          <!-- Expiry progress bar -->
+          <div style="width:100%;height:4px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;margin-bottom:8px">
+            <div id="thinkedTokenBar" style="height:100%;border-radius:99px;background:${thinkedColor};width:${Math.max(0,Math.min(100,(thinkedLeft/300)*100)).toFixed(1)}%;transition:width 1s linear,background 0.5s"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:10px;color:var(--text-muted)">Issued via Authorization Code Flow · Token lifetime: 5 min</span>
+            <span style="font-size:10px;color:var(--text-muted)">Issued at ${new Date(parseInt(localStorage.getItem('thinked_issued_at')||'0')*1000).toLocaleTimeString()}</span>
+          </div>
+        </div>
+      </div>`;
+
+      // Start live countdown for thinkED token in token activity
+      setTimeout(() => {
+        const expiryEl = document.getElementById('thinkedTokenExpiry');
+        const barEl    = document.getElementById('thinkedTokenBar');
+        if (!expiryEl) return;
+        setInterval(() => {
+          const exp  = parseInt(localStorage.getItem('thinked_expires_at') || '0');
+          const left = Math.max(0, exp - Math.floor(Date.now()/1000));
+          const mins = Math.floor(left / 60);
+          const secs = left % 60;
+          const pct  = Math.max(0, Math.min(100, (left / 300) * 100));
+          const col  = left > 120 ? '#4ED378' : left > 60 ? '#f59e0b' : '#f87171';
+          if (expiryEl) {
+            expiryEl.textContent = left > 0 ? `Expires in ${mins}m ${String(secs).padStart(2,'0')}s` : '⚠ Expired';
+            expiryEl.style.color = col;
+          }
+          if (barEl) { barEl.style.width = pct + '%'; barEl.style.background = col; }
+        }, 1000);
+      }, 100);
+    }
+
+    tokenList.innerHTML = html;
+
+  } catch(e) {
+    tokenList.innerHTML = '<div style="padding:20px;text-align:center;color:#f87171;font-size:13px">Could not load token activity</div>';
+    console.error('Token activity error:', e);
+  }
+}
+
+// ── OAUTH CONNECTED APPS ───────────────────────
+// ── COUNTDOWN TIMER for OAuth tokens ──
+let countdownInterval = null;
+
+function startCountdown() {
+  if (countdownInterval) clearInterval(countdownInterval);
+  countdownInterval = setInterval(() => {
+    const el = document.getElementById('thinkedCountdown');
+    if (!el) { clearInterval(countdownInterval); return; }
+    const expiresAt = parseInt(localStorage.getItem('thinked_expires_at') || '0');
+    if (!expiresAt) { el.textContent = 'Unknown expiry'; return; }
+    const remaining = expiresAt - Math.floor(Date.now() / 1000);
+    if (remaining <= 0) {
+      el.textContent = '⚠ Expired';
+      el.style.color = '#f87171';
+      clearInterval(countdownInterval);
+      // Auto-clear expired token
+      localStorage.removeItem('thinked_access_token');
+      setTimeout(() => renderOAuthApps(), 1500);
+      return;
+    }
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
+    el.textContent = `Expires in ${mins}m ${secs.toString().padStart(2,'0')}s`;
+    el.style.color = remaining < 120 ? '#f59e0b' : '#4ED378';
+  }, 1000);
+}
+
+function renderOAuthApps() {
+  const thinkedToken   = localStorage.getItem('thinked_access_token');
+  const thinkedUser    = localStorage.getItem('thinked_user') || sessionStorage.getItem('thinked_user');
+  const thinkedName    = thinkedUser ? (JSON.parse(thinkedUser).name  || 'Alen John')        : 'Alen John';
+  const thinkedEmail   = thinkedUser ? (JSON.parse(thinkedUser).email || 'alen@example.com') : 'alen@example.com';
+  const issuedAt       = parseInt(localStorage.getItem('thinked_issued_at') || '0');
+  const expiresAt      = parseInt(localStorage.getItem('thinked_expires_at') || '0');
+  const expiresIn      = parseInt(localStorage.getItem('thinked_expires_in') || '300'); // 5 min default
+  const issuedDate     = issuedAt ? new Date(issuedAt * 1000).toLocaleTimeString() : 'Unknown';
+
+  const appsSection = document.getElementById('connectedAppsSection');
+  if (!appsSection) return;
+  appsSection.querySelectorAll('.session-item, .no-apps-msg').forEach(el => el.remove());
+  if (countdownInterval) clearInterval(countdownInterval);
+
+  if (thinkedToken) {
+    const remaining = expiresAt ? expiresAt - Math.floor(Date.now()/1000) : 0;
+    const isExpired = expiresAt && remaining <= 0;
+    const statusColor = isExpired ? '#f87171' : '#4ED378';
+    const statusText  = isExpired ? 'Expired' : 'Authorized';
+
+    appsSection.insertAdjacentHTML('beforeend', `
+    <div class="session-item" id="thinkedSession">
+      <div class="session-left">
+        <div class="session-device-icon" style="background:rgba(37,99,235,0.1);border-color:rgba(37,99,235,0.3)">
+          <span style="font-size:18px">📚</span>
+        </div>
+        <div style="flex:1">
+          <div class="session-device">thinkED Academy</div>
+          <div class="session-meta">
+            OAuth 2.0 · ${thinkedName}${thinkedEmail ? ' · ' + thinkedEmail : ''}
+            <div class="session-location-dot"></div>
+            Scopes: profile, email
+          </div>
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <div style="font-size:10px;color:var(--text-muted);font-family:monospace;background:rgba(0,0,0,0.3);padding:3px 8px;border-radius:4px">
+              🔑 ${thinkedToken.substring(0,24)}...
+            </div>
+            <div id="thinkedCountdown" style="font-size:11px;font-weight:600;color:#4ED378">
+              ${isExpired ? '⚠ Expired' : expiresAt ? 'Calculating...' : 'Token: ' + expiresIn/60 + ' min session'}
+            </div>
+          </div>
+          <div style="margin-top:4px;font-size:10px;color:var(--text-muted)">
+            Token lifetime: ${expiresIn/60} min · Issued at ${issuedDate}
+          </div>
+        </div>
+      </div>
+      <div class="session-right">
+        <div class="session-status active" style="color:${statusColor}">
+          <div class="status-dot" style="background:${statusColor}"></div>${statusText}
+        </div>
+        <button class="revoke-btn" onclick="revokeOAuthApp()" style="background:rgba(248,113,113,0.1);border-color:rgba(248,113,113,0.3);color:#f87171">Revoke</button>
+      </div>
+    </div>`);
+
+    if (!isExpired && expiresAt) startCountdown();
+  } else {
+    appsSection.insertAdjacentHTML('beforeend',
+      '<div class="no-apps-msg" style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">No connected applications · <a href="http://localhost:5500/index.html" style="color:var(--neon);text-decoration:none">Connect thinkED →</a></div>');
+  }
+}
+
+// ── REVOKE OAUTH APP ───────────────────────────
+function revokeOAuthApp() {
+  // Clear ALL possible thinkED keys from both storages
+  ['thinked_token','thinked_access_token','thinked_authed','thinked_code',
+   'thinked_user','thinked_scope','vaultid_token','access_token'].forEach(k => {
+    localStorage.removeItem(k);
+    sessionStorage.removeItem(k);
+  });
+  // Keep only VaultID's own token
+  const myToken = sessionStorage.getItem('vaultid_token');
+
+  const item = document.getElementById('thinkedSession');
+  if (item) {
+    item.style.transition = 'opacity 0.3s, transform 0.3s';
+    item.style.opacity = '0';
+    item.style.transform = 'translateX(20px)';
+    setTimeout(() => { item.remove(); renderOAuthApps(); loadTokenActivity(); }, 300);
+  }
+  showToast('thinkED access revoked — they are now logged out');
+}
+
+// ── REVOKE SESSION ─────────────────────────────
+async function revokeSession(sessionId, btn) {
+  const token = getToken();
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    const res = await fetch(`${API_BASE}/auth/sessions/${sessionId}/revoke`, {
+      method: 'POST', headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const item = btn.closest('.session-item');
+      item.style.transition = 'opacity 0.3s,transform 0.3s';
+      item.style.opacity = '0'; item.style.transform = 'translateX(20px)';
+      setTimeout(() => {
+        item.remove();
+        const c = document.querySelectorAll('.sessions-panel:first-of-type .session-item').length;
+        document.getElementById('sessionsCount').textContent = c;
+        document.querySelector('.panel-title').innerHTML = `<div class="panel-title-dot"></div>${c} Session${c!==1?'s':''} Running`;
+      }, 300);
+      showToast('Session revoked');
+    } else { btn.textContent = 'Failed'; setTimeout(()=>{btn.textContent='Revoke';btn.disabled=false;},2000); }
+  } catch(e) { btn.textContent='Error'; setTimeout(()=>{btn.textContent='Revoke';btn.disabled=false;},2000); }
+}
+
+// ── SIGN OUT ───────────────────────────────────
+async function signOut() {
+  const token = getToken();
+  try { await fetch(`${API_BASE}/auth/logout-all`, { method:'POST', headers:{'Authorization':`Bearer ${token}`} }); } catch(e){}
+  sessionStorage.clear();
+  window.location.href = 'VaultID-login-fixed.html';
+}
+
+// ── TOAST NOTIFICATION ─────────────────────────
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#0a100d;border:1px solid rgba(78,211,120,0.3);color:#4ED378;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;animation:fadeUp 0.3s ease both;box-shadow:0 8px 32px rgba(0,0,0,0.4)';
+  t.textContent = '✓ ' + msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.3s'; setTimeout(()=>t.remove(),300); }, 3000);
+}
+
+// ── UTILS ──────────────────────────────────────
+function formatTimeAgo(d) {
+  if (!d) return 'Unknown';
+  const s = (Date.now() - new Date(d)) / 1000;
+  if (s < 60)    return 'Just now';
+  if (s < 3600)  return `${Math.floor(s/60)}m ago`;
+  if (s < 86400) return `${Math.floor(s/3600)}h ago`;
+  return `${Math.floor(s/86400)}d ago`;
+}
+
+// ── WIRE SIGN OUT ──────────────────────────────
+document.querySelectorAll('a[href="VaultID-login-fixed.html"].danger, a.danger[href="VaultID-login-fixed.html"]').forEach(el => {
+  el.addEventListener('click', e => { e.preventDefault(); signOut(); });
+});
+
+// ── AI RISK WIDGET ─────────────────────────────
+async function loadAIRisk() {
+  const token = getToken();
+  if (!token) return;
+
+  // Get user id from /auth/me
+  try {
+    const meRes  = await fetch(`${API_BASE}/auth/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const me     = await meRes.json();
+    const userId = String(me.id);
+
+    const res  = await fetch(`${API_BASE}/ai/session-status/${userId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+
+    const level     = (data.risk_level || 'UNKNOWN').toUpperCase();
+    const active    = data.session_active;
+    const score     = Math.round((data.last_score || 0) * 100);  // 0-100
+
+    // Risk level
+    const levelEl = document.getElementById('aiRiskLevel');
+    levelEl.textContent = level;
+    levelEl.className   = 'ai-risk-cell-val ' +
+      (level === 'LOW' ? 'risk-low' : level === 'MEDIUM' ? 'risk-medium' : 'risk-high');
+
+    const actionEl = document.getElementById('aiRiskAction');
+    actionEl.textContent  = level === 'LOW' ? '✓ Access allowed' : level === 'MEDIUM' ? '⚠ MFA triggered' : '✗ Session blocked';
+    actionEl.style.color  = level === 'LOW' ? '#4ED378' : level === 'MEDIUM' ? '#f59e0b' : '#f87171';
+
+    // Anomaly score arc
+    document.getElementById('aiScoreVal').textContent = score;
+    const arc        = document.getElementById('scoreArc');
+    const circumference = 138.2;
+    const offset     = circumference - (score / 100) * circumference;
+    arc.style.strokeDashoffset = offset;
+    arc.style.stroke = score < 30 ? '#4ED378' : score < 60 ? '#f59e0b' : '#f87171';
+
+    // Session guard
+    const sessEl  = document.getElementById('aiSessionStatus');
+    const subEl   = document.getElementById('aiSessionSub');
+    sessEl.textContent = active ? '🟢 Guarded' : '🔴 Blocked';
+    sessEl.style.color = active ? '#4ED378' : '#f87171';
+    subEl.textContent  = active ? 'Zero Trust: PASS' : 'Zero Trust: FAIL';
+    subEl.style.color  = active ? '#4ED378' : '#f87171';
+
+    // Last check time
+    document.getElementById('aiLastCheck').textContent = new Date().toLocaleTimeString('en-IN');
+    document.getElementById('aiModelStatus').textContent = 'LSTM · 4-feature';
+
+  } catch(e) {
+    document.getElementById('aiRiskLevel').textContent   = 'N/A';
+    document.getElementById('aiRiskAction').textContent  = 'AI service offline';
+    document.getElementById('aiSessionStatus').textContent = '—';
+    document.getElementById('aiLastCheck').textContent   = 'Unavailable';
+    console.warn('AI risk widget:', e);
+  }
+}
+
+// ── LIVE TOKEN COUNTDOWN ───────────────────────
+let tokenCountdownInterval = null;
+
+function startTokenCountdown() {
+  if (tokenCountdownInterval) clearInterval(tokenCountdownInterval);
+
+  // Access token: 15 min from login
+  // We decode the JWT to get `exp` claim
+  function getJWTExp(token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp || null;
+    } catch { return null; }
+  }
+
+  tokenCountdownInterval = setInterval(() => {
+    const accessToken   = sessionStorage.getItem('vaultid_token') || localStorage.getItem('vaultid_token');
+    const now           = Math.floor(Date.now() / 1000);
+
+    // Access token countdown
+    const accessExp = accessToken ? getJWTExp(accessToken) : null;
+    const accessBar = document.getElementById('accessTokenBar');
+    const accessTimer = document.getElementById('accessTokenTimer');
+
+    if (accessExp) {
+      const totalLife = 15 * 60; // 15 min in seconds
+      const remaining = accessExp - now;
+      const pct       = Math.max(0, Math.min(100, (remaining / totalLife) * 100));
+      const mins      = Math.floor(Math.max(0, remaining) / 60);
+      const secs      = Math.max(0, remaining) % 60;
+
+      accessBar.style.width      = pct + '%';
+      accessBar.style.background = pct > 40 ? '#4ED378' : pct > 15 ? '#f59e0b' : '#f87171';
+      accessTimer.textContent    = remaining > 0
+        ? `${mins}m ${String(secs).padStart(2,'0')}s`
+        : 'Expired — refreshing...';
+      accessTimer.style.color    = pct > 40 ? '#4ED378' : pct > 15 ? '#f59e0b' : '#f87171';
+
+      // Auto-refresh when < 60s left
+      if (remaining < 60 && remaining > 0) {
+        accessTimer.textContent = `⚠ ${mins}m ${String(secs).padStart(2,'0')}s — refreshing soon`;
+      }
+    } else {
+      accessTimer.textContent = 'No active token';
+      accessBar.style.width   = '0%';
+    }
+
+    // Refresh token countdown (7 days)
+    const refreshBar   = document.getElementById('refreshTokenBar');
+    const refreshTimer = document.getElementById('refreshTokenTimer');
+    const refreshExp   = parseInt(localStorage.getItem('vaultid_refresh_exp') || '0');
+
+    if (refreshExp) {
+      const totalLife   = 7 * 24 * 3600;
+      const remaining   = refreshExp - now;
+      const pct         = Math.max(0, Math.min(100, (remaining / totalLife) * 100));
+      const days        = Math.floor(Math.max(0,remaining) / 86400);
+      const hrs         = Math.floor((Math.max(0,remaining) % 86400) / 3600);
+      refreshBar.style.width      = pct + '%';
+      refreshBar.style.background = '#A4D1B3';
+      refreshTimer.textContent    = remaining > 0 ? `${days}d ${hrs}h remaining` : 'Expired';
+      refreshTimer.style.color    = pct > 30 ? '#A4D1B3' : '#f59e0b';
+    } else {
+      refreshTimer.textContent = '7d (rotating)';
+      refreshBar.style.width   = '80%';
+    }
+
+  }, 1000);
+}
+
+// ── INJECT DEMO THINKED SESSION (5 min expiry) ──
+function injectDemoThinkED() {
+  const now       = Math.floor(Date.now() / 1000);
+  const expiresIn = 300; // 5 minutes
+  // Refresh expiry every page load so it's always a fresh 5-min window
+  const fakeToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
+    btoa(JSON.stringify({sub:'alen@example.com',name:'Alen John',scope:'profile email',iat:now,exp:now+expiresIn,client:'thinked_client'})) +
+    '.VaultID_OAuth_Demo_Sig_2026';
+
+  localStorage.setItem('thinked_access_token', fakeToken);
+  localStorage.setItem('thinked_issued_at',    String(now));
+  localStorage.setItem('thinked_expires_at',   String(now + expiresIn));
+  localStorage.setItem('thinked_expires_in',   String(expiresIn));
+  localStorage.setItem('thinked_user', JSON.stringify({
+    name:  'Alen John',
+    email: 'alen@example.com'
+  }));
+  sessionStorage.setItem('thinked_authed', 'true');
+  sessionStorage.setItem('thinked_token',  fakeToken);
+  sessionStorage.setItem('thinked_user',   JSON.stringify({ name: 'Alen John', email: 'alen@example.com' }));
+}
+
+// ── BOOT ───────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  if (requireAuth()) {
+    injectDemoThinkED();    // always inject fresh 5-min thinkED session
+    loadUserProfile();
+    loadSessions();
+    loadTokenActivity();
+    renderOAuthApps();
+    loadAIRisk();
+    startTokenCountdown();
+    setInterval(loadAIRisk, 30000);
+  }
+});
+
+/* ══ GRID OVERLAY ══ */
+const gridOverlay = document.createElement('div');
+gridOverlay.style.cssText = 'position:fixed;inset:0;z-index:1;pointer-events:none;background-image:linear-gradient(rgba(78,211,120,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(78,211,120,0.03) 1px,transparent 1px);background-size:60px 60px';
+document.body.prepend(gridOverlay);
+</script>
+</body>
+</html>

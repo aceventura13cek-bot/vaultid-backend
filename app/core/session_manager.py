@@ -40,7 +40,8 @@ class SessionManager:
         Returns: {
             'access_token': str,
             'refresh_token': str,
-            'session_id': str
+            'session_id': str,
+            'expires_in': int
         }
         """
         # Generate unique session ID
@@ -145,16 +146,20 @@ class SessionManager:
         # Mark session as inactive
         session.is_active = False
         
-        # Blacklist refresh token
+        # Blacklist refresh token (check for duplicate first)
         if session.refresh_token_hash:
-            blacklist = TokenBlacklist(
-                jti_hash=session.refresh_token_hash,
-                user_id=session.user_id,
-                token_type="refresh",
-                reason=reason,
-                expires_at=session.expires_at
-            )
-            db.add(blacklist)
+            existing = db.query(TokenBlacklist).filter(
+                TokenBlacklist.jti_hash == session.refresh_token_hash
+            ).first()
+            if not existing:
+                blacklist = TokenBlacklist(
+                    jti_hash=session.refresh_token_hash,
+                    user_id=session.user_id,
+                    token_type="refresh",
+                    reason=reason,
+                    expires_at=session.expires_at
+                )
+                db.add(blacklist)
         
         # Log revocation
         SessionManager._log_token_action(
@@ -215,6 +220,24 @@ class SessionManager:
                 session.current_access_token_jti_hash = new_access_jti_hash
             
             db.commit()
+    
+    @staticmethod
+    def cleanup_expired_tokens(db: Session) -> int:
+        """
+        Clean up expired blacklisted tokens
+        
+        Should be called periodically (cron job or background task)
+        
+        Returns: Number of tokens cleaned up
+        """
+        result = db.query(TokenBlacklist).filter(
+            TokenBlacklist.expires_at < datetime.now(timezone.utc)
+        ).delete()
+        
+        db.commit()
+        
+        print(f"🧹 Cleaned up {result} expired tokens from blacklist")
+        return result
     
     @staticmethod
     def _log_token_action(
